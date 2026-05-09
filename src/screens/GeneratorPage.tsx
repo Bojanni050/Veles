@@ -105,97 +105,46 @@ export function GeneratorPage() {
       try {
         const b = await getBalance()
         setBalance(b)
-              <Field label="Model">
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    aria-label="Model"
-                    title="Model"
-                    value={model}
-                    onChange={(e) => setModel(e.currentTarget.value)}
-                    bg="bg"
-                  >
-                    {models.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field>
+      } catch {
+        // API key might not be set
+      }
+    }
+    loadDefaults()
+  }, [setLanguage, setModel])
+
+  const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
+    const MAX_CONSECUTIVE_FAILURES = 5
+    let consecutiveFailures = 0
+    for (let i = 0; i < maxAttempts; i++) {
+      setPollAttempt(i + 1)
+      await new Promise((r) => setTimeout(r, 3000))
+      try {
         const result = await querySongStatus(itemIds)
         consecutiveFailures = 0
         if (result.status === "succeeded" || result.status === "completed" || result.status === "complete" || result.audio_url) {
           return { audio_url: result.audio_url ?? null, audio_hi_url: result.audio_hi_url ?? null }
         }
         if (result.status === "failed" || result.status === "error") {
-              <Field label="Language">
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    aria-label="Language"
-                    title="Language"
-                    value={language}
-                    onChange={(e) => setLanguage(e.currentTarget.value)}
-                    bg="bg"
-                  >
-                    {languages.map((l) => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field>
+          return { audio_url: null, audio_hi_url: null }
+        }
+      } catch (err) {
+        consecutiveFailures++
+        if (process.env.NODE_ENV === "development") {
+          console.error(`[pollForResult] fetch error (attempt ${i + 1}, consecutive: ${consecutiveFailures}):`, err)
+        }
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[pollForResult] stopping early after", MAX_CONSECUTIVE_FAILURES, "consecutive failures")
+          }
+          return { audio_url: null, audio_hi_url: null }
+        }
+      }
     }
     return { audio_url: null, audio_hi_url: null }
   }, [])
 
   async function handleGenerateLyrics() {
     if (!lyricsPrompt.trim()) return
-              <Field label="Voice">
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    aria-label="Voice"
-                    title="Voice"
-                    value={voiceId}
-                    onChange={(e) => setVoiceId(e.currentTarget.value)}
-                    bg="bg"
-                  >
-                    {voices.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} — {v.description}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field>
-
-  async function pollForLyrics(itemIds: string[]): Promise<string | null> {
-    const MAX_CONSECUTIVE_FAILURES = 5
-    let consecutiveFailures = 0
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 3000))
-      try {
-        const result = await querySongStatus(itemIds)
-        consecutiveFailures = 0
-        if (result.lyrics) return result.lyrics
-        if (result.status === "completed" || result.status === "complete") {
-          return result.lyrics ?? null
-        }
-        if (result.status === "failed" || result.status === "error") return null
-      } catch (err) {
-        consecutiveFailures++
-        if (process.env.NODE_ENV === "development") {
-          console.error(`[pollForLyrics] fetch error (attempt ${i + 1}, consecutive: ${consecutiveFailures}):`, err)
-        }
-        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("[pollForLyrics] stopping early after", MAX_CONSECUTIVE_FAILURES, "consecutive failures")
-          }
-          return null
-        }
-      }
-    }
-    return null
-  }
 
   async function handleGenerateSong() {
     if (!genre.trim() || !lyrics.trim()) return
