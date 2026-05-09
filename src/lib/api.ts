@@ -468,10 +468,35 @@ export async function saveSunoApiKey(key: string): Promise<void> {
 export async function getSunoBalance(): Promise<number> {
   const data = await sunoFetch<SunoBalanceResponseData>("/api/v1/credits/balance", undefined, "GET")
 
-  const remaining = data.remainingCredits
+  let remaining = data.remainingCredits
     ?? data.remaining_credits
     ?? data.credits
     ?? data.balance
+
+  if (remaining === undefined || remaining === null) {
+    const nested = data as unknown as {
+      data?: SunoBalanceResponseData
+      credit?: SunoBalanceResponseData
+      credits?: SunoBalanceResponseData | number
+      result?: SunoBalanceResponseData
+    }
+
+    const nestedCandidate = typeof nested.credits === "object"
+      ? nested.credits
+      : nested.data ?? nested.credit ?? nested.result
+
+    if (nestedCandidate && typeof nestedCandidate === "object") {
+      remaining = nestedCandidate.remainingCredits
+        ?? nestedCandidate.remaining_credits
+        ?? nestedCandidate.credits
+        ?? nestedCandidate.balance
+    }
+  }
+
+  if (typeof remaining === "string") {
+    const parsed = Number(remaining)
+    remaining = Number.isFinite(parsed) ? parsed : remaining
+  }
 
   if (typeof remaining !== "number") {
     throw new Error("Suno balance response did not include remaining credits.")

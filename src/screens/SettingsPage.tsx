@@ -117,7 +117,7 @@ export function SettingsPage() {
   async function handleSaveSunoApi() {
     setSunoSaving(true)
     try {
-      await saveSunoApiKey(sunoApiKey)
+      await saveSunoApiKey(sunoApiKey.trim())
       toaster.success({ title: "Suno API key saved", description: "Your Suno key has been updated." })
     } catch (error: unknown) {
       toaster.error({ title: "Error", description: getErrorMessage(error) })
@@ -129,6 +129,11 @@ export function SettingsPage() {
   async function handleTestSunoApi() {
     setSunoTesting(true)
     try {
+      const key = sunoApiKey.trim()
+      if (!key) {
+        throw new Error("Please enter a Suno API key first.")
+      }
+      await saveSunoApiKey(key)
       const remainingCredits = await getSunoBalance()
       toaster.success({
         title: "Suno connection successful",

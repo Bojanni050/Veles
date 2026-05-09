@@ -195,3 +195,9 @@
 - Findings: Tempolor save/test actions were positioned at the bottom of the settings form instead of next to the Tempolor key input.
 - Conclusions: Move the Tempolor action row directly under the Tempolor API key field to keep key actions contextual and easier to find.
 - Actions: Updated `src/screens/SettingsPage.tsx` by relocating the existing Tempolor Save/Test button row under the Tempolor API key helper text and removing the bottom duplicate row; validated diagnostics.
+
+## 2026-05-09 (Suno test flow reliability fix)
+
+- Findings: Suno key testing could fail even with a typed key because the proxy reads from persisted settings, and balance payload shapes can vary across responses.
+- Conclusions: Persist the current Suno key before running the test call and broaden balance parsing so valid credit data is recognized from common nested/typed variants.
+- Actions: Updated `src/screens/SettingsPage.tsx` so `handleTestSunoApi` validates and saves the trimmed key before calling `getSunoBalance`, trimmed key on Suno save, and updated `src/lib/api.ts` `getSunoBalance()` to parse additional nested fields and numeric strings; validated diagnostics.
