@@ -40,13 +40,14 @@ export function AudioPlayer({ song, songs, onSongChange }: AudioPlayerProps) {
   }, [volume, muted])
 
   useEffect(() => {
-    if (!song?.audio_url) return
+    const audioSrc = song?.audio_hi_url ?? song?.audio_url
+    if (!audioSrc) return
     const audio = audioRef.current
     if (!audio) return
-    audio.src = song.audio_url
+    audio.src = audioSrc
     audio.load()
     audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
-  }, [song?.id, song?.audio_url])
+  }, [song?.id, song?.audio_hi_url, song?.audio_url])
 
   const handleTimeUpdate = useCallback(() => {
     if (!audioRef.current) return
@@ -67,7 +68,7 @@ export function AudioPlayer({ song, songs, onSongChange }: AudioPlayerProps) {
   }, [song?.id, songs, onSongChange])
 
   function togglePlay() {
-    if (!audioRef.current || !song?.audio_url) return
+    if (!audioRef.current || !(song?.audio_hi_url ?? song?.audio_url)) return
     if (playing) {
       audioRef.current.pause()
       setPlaying(false)

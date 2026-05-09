@@ -499,7 +499,7 @@ export function GeneratorPage() {
               </Box>
             </HStack>
 
-            <audio controls src={resultAudioUrl} />
+            <audio controls src={resultAudioHiUrl ?? resultAudioUrl ?? undefined} />
 
             <HStack gap="3">
               <Button
