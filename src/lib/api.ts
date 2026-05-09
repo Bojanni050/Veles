@@ -28,6 +28,8 @@ type TempolorResponse<T> = {
   data?: T
   error?: string
   item_ids?: string[]
+  success?: boolean
+  message?: string
 }
 
 type TempolorSongStatusItem = {
@@ -162,6 +164,10 @@ async function tempolorFetch<T>(path: string, body: object, method = "POST"): Pr
     throw new Error(payload.error)
   }
 
+  if (payload.success === false && typeof payload.message === "string" && payload.message.trim().length > 0) {
+    throw new Error(payload.message)
+  }
+
   if ((payload.data === null || payload.data === undefined) && Array.isArray(payload.item_ids)) {
     payload = { ...payload, data: payload as unknown as T }
   }
@@ -223,13 +229,22 @@ export async function getBalance(): Promise<number> {
 
 export async function generateLyrics(prompt: string, model: string) {
   return runWithMissingItemIdsRetry(async () => {
-    const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", { prompt, model })
+    const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", {
+      prompt,
+      model,
+      callback_url: "https://example.com/noop",
+    })
     return getItemIdsFromResponse(res.data)
   })
 }
 
 export async function generateSong(prompt: string, lyrics: string, model: string, voiceId?: string) {
-  const body: Record<string, string> = { prompt, lyrics, model }
+  const body: Record<string, string> = {
+    prompt,
+    lyrics,
+    model,
+    callback_url: "https://example.com/noop",
+  }
   if (voiceId) body.voice_id = voiceId
   return runWithMissingItemIdsRetry(async () => {
     const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/song/generate", body)

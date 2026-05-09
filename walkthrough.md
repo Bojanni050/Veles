@@ -111,3 +111,9 @@
 - Findings: `tempolorFetch` only handled wrapped `{ data: ... }` responses, but Tempolor can also return flat `{ item_ids: [...] }` or `{ error: "..." }` payloads.
 - Conclusions: Parse the raw body directly in the helper so the code can distinguish empty or unparseable responses from valid flat payloads and surface top-level errors cleanly.
 - Actions: Updated `src/lib/api.ts` so `tempolorFetch` logs raw payloads in development, treats flat `item_ids` responses as data, throws top-level `error` messages, and only uses the empty-response error when the body is truly empty or invalid.
+
+## 2026-05-09 (Tempolor callback URL)
+
+- Findings: Tempolor song generation requires a `callback_url` field even though Veles does not consume callbacks directly.
+- Conclusions: Include a no-op callback URL in the request body so generation requests satisfy the upstream contract without changing local behavior.
+- Actions: Added `callback_url: "https://example.com/noop"` to the `generateSong` request body in `src/lib/api.ts` and kept the retry/status flow unchanged.
