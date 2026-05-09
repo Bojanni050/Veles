@@ -466,7 +466,17 @@ export async function saveSunoApiKey(key: string): Promise<void> {
 }
 
 export async function getSunoBalance(): Promise<number> {
-  const data = await sunoFetch<SunoBalanceResponseData>("/api/v1/credits/balance", undefined, "GET")
+  let data: SunoBalanceResponseData | number
+  try {
+    data = await sunoFetch<SunoBalanceResponseData | number>("/api/v1/generate/credit", undefined, "GET")
+  } catch {
+    // Backward-compatibility fallback for older Suno proxy setups.
+    data = await sunoFetch<SunoBalanceResponseData | number>("/api/v1/credits/balance", undefined, "GET")
+  }
+
+  if (typeof data === "number") {
+    return data
+  }
 
   let remaining = data.remainingCredits
     ?? data.remaining_credits

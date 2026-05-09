@@ -32,6 +32,7 @@ import {
   getSetting,
   saveSong,
   getBalance,
+  getSunoBalance,
   type SunoStatusSunoItem,
 } from "@/lib/api"
 import { downloadFile } from "@/lib/download"
@@ -96,7 +97,8 @@ export function GeneratorPage() {
   const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null)
   const [resultAudioHiUrl, setResultAudioHiUrl] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
-  const [balance, setBalance] = useState<number | null>(null)
+  const [tempolorBalance, setTempolorBalance] = useState<number | null>(null)
+  const [sunoBalance, setSunoBalance] = useState<number | null>(null)
   const [pollAttempt, setPollAttempt] = useState(0)
   const inlineAudioRef = useRef<HTMLAudioElement | null>(null)
   const [inlinePlaying, setInlinePlaying] = useState(false)
@@ -107,21 +109,26 @@ export function GeneratorPage() {
 
   const inlineAudioSrc = resultAudioHiUrl ?? resultAudioUrl
 
+  const formatTempolorCredits = useCallback((value: number): string => {
+    const normalized = value < 100 ? Math.round(value * 100) : Math.round(value)
+    return normalized.toString()
+  }, [])
+
+  const refreshProviderCredits = useCallback(() => {
+    getBalance().then(setTempolorBalance).catch(() => {})
+    getSunoBalance().then(setSunoBalance).catch(() => {})
+  }, [])
+
   useEffect(() => {
     async function loadDefaults() {
       const m = await getSetting("default_model")
       if (m) setModel(m)
       const l = await getSetting("default_language")
       if (l) setLanguage(l)
-      try {
-        const b = await getBalance()
-        setBalance(b)
-      } catch {
-        // API key might not be set
-      }
+      refreshProviderCredits()
     }
     loadDefaults()
-  }, [setLanguage, setModel])
+  }, [refreshProviderCredits, setLanguage, setModel])
 
   useEffect(() => {
     if (!inlineAudioRef.current) return
@@ -300,7 +307,7 @@ export function GeneratorPage() {
         setGenerationError(timeoutMessage)
         toaster.error({ title: "Generation failed", description: timeoutMessage })
       }
-      getBalance().then(setBalance).catch(() => {})
+      refreshProviderCredits()
     } catch (error: unknown) {
       setStatus("failed")
       setPollAttempt(0)
@@ -344,23 +351,44 @@ export function GeneratorPage() {
             Create AI-generated songs with custom lyrics
           </Text>
         </Box>
-        {balance !== null && (
-          <HStack
-            bg="bg.subtle"
-            px="4"
-            py="2"
-            rounded="lg"
-            borderWidth="1px"
-            borderColor="border.muted"
-            gap="2"
-          >
-            <Box as={LuCoins} boxSize="4" color="teal.400" />
-            <Text fontWeight="semibold" color="fg">
-              {balance.toFixed(2)}
-            </Text>
-            <Text fontSize="sm" color="fg.muted">credits</Text>
-          </HStack>
-        )}
+        <HStack gap="3" wrap="wrap" justify="flex-end">
+          {tempolorBalance !== null && (
+            <HStack
+              bg="bg.subtle"
+              px="4"
+              py="2"
+              rounded="lg"
+              borderWidth="1px"
+              borderColor="border.muted"
+              gap="2"
+            >
+              <Box as={LuCoins} boxSize="4" color="teal.400" />
+              <Text fontSize="sm" color="fg.muted">Tempolor</Text>
+              <Text fontWeight="semibold" color="fg">
+                {formatTempolorCredits(tempolorBalance)}
+              </Text>
+              <Text fontSize="sm" color="fg.muted">credits</Text>
+            </HStack>
+          )}
+          {sunoBalance !== null && (
+            <HStack
+              bg="bg.subtle"
+              px="4"
+              py="2"
+              rounded="lg"
+              borderWidth="1px"
+              borderColor="border.muted"
+              gap="2"
+            >
+              <Box as={LuCoins} boxSize="4" color="teal.400" />
+              <Text fontSize="sm" color="fg.muted">Suno</Text>
+              <Text fontWeight="semibold" color="fg">
+                {Math.round(sunoBalance)}
+              </Text>
+              <Text fontSize="sm" color="fg.muted">credits</Text>
+            </HStack>
+          )}
+        </HStack>
       </Flex>
 
       <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap="6">

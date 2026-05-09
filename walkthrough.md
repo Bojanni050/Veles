@@ -201,3 +201,15 @@
 - Findings: Suno key testing could fail even with a typed key because the proxy reads from persisted settings, and balance payload shapes can vary across responses.
 - Conclusions: Persist the current Suno key before running the test call and broaden balance parsing so valid credit data is recognized from common nested/typed variants.
 - Actions: Updated `src/screens/SettingsPage.tsx` so `handleTestSunoApi` validates and saves the trimmed key before calling `getSunoBalance`, trimmed key on Suno save, and updated `src/lib/api.ts` `getSunoBalance()` to parse additional nested fields and numeric strings; validated diagnostics.
+
+## 2026-05-09 (Suno balance endpoint correction)
+
+- Findings: Suno docs define credits endpoint as `GET /api/v1/generate/credit`, while the client test used `/api/v1/credits/balance`, causing connection-test failures.
+- Conclusions: Align the client with the documented endpoint and keep a fallback path for compatibility.
+- Actions: Updated `src/lib/api.ts` `getSunoBalance()` to call `/api/v1/generate/credit` first, fallback to `/api/v1/credits/balance` on failure, and preserve existing response-shape parsing; validated diagnostics.
+
+## 2026-05-09 (Per-provider credits in Generator)
+
+- Findings: Generator header showed a single credits value and formatted Tempolor balances as decimal values, which did not match expected credit units (e.g., `9.70` vs `970`).
+- Conclusions: Show credits per provider (Tempolor and Suno) and normalize Tempolor display to whole credit units.
+- Actions: Updated `src/screens/GeneratorPage.tsx` to load and display separate Tempolor/Suno credit badges, refresh both balances on load and after generation, and format Tempolor credits as whole units for display; validated diagnostics.
