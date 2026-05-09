@@ -5,10 +5,10 @@
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev --webpack -p 5377",
     "build": "next build --webpack",
     "lint": "eslint .",
-    "start": "next start",
+    "start": "next start -p 5377",
     "import:supabase": "node ./scripts/import-supabase.mjs",
     "electron:dev": "concurrently \"next dev --webpack -p 5377\" \"wait-on http://localhost:5377 && cross-env ELECTRON_START_URL=http://localhost:5377 electron .\"",
     "electron:build": "next build --webpack && electron-builder",
