@@ -27,3 +27,15 @@
 - Findings: package.json had two top-level objects merged together, causing npm EJSONPARSE failures.
 - Conclusions: Merge all required Electron and Next fields into one valid JSON object while preserving the webpack-based Next scripts.
 - Actions: Repaired package.json structure, kept Electron scripts/config in the same object, and validated script execution with npm.
+
+## 2026-05-09 (Electron ESM startup fix)
+
+- Findings: Electron main process crashed under `"type": "module"` because it still used CommonJS `require`, and startup logic also attempted to spawn Next internally in a Windows-unsafe way.
+- Conclusions: Convert `electron/main.js` to native ESM and make Electron consume an explicit start URL from environment, while script-level orchestration handles Next startup.
+- Actions: Rewrote Electron main imports to ESM with `fileURLToPath`/`__dirname` derivation, removed internal Next spawning, updated Electron dev/preview scripts to pass `ELECTRON_START_URL`, and validated by running Electron dev until Next compiled without the previous require error.
+
+## 2026-05-09 (Electron port 5377)
+
+- Findings: Default Electron development ports were conflicting with other local processes and causing repeated `EADDRINUSE` startup failures.
+- Conclusions: Standardize Electron orchestration on a dedicated port and keep the main-process fallback URL aligned with script-level configuration.
+- Actions: Verified port `5377` was available, updated Electron dev/preview scripts to use `5377`, aligned `ELECTRON_START_URL` and main fallback URL to `http://localhost:5377`, and validated startup reaches Next readiness on the new port.

@@ -10,9 +10,9 @@
     "lint": "eslint .",
     "start": "next start",
     "import:supabase": "node ./scripts/import-supabase.mjs",
-    "electron:dev": "concurrently \"next dev --webpack -p 3000\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:dev": "concurrently \"next dev --webpack -p 5377\" \"wait-on http://localhost:5377 && cross-env ELECTRON_START_URL=http://localhost:5377 electron .\"",
     "electron:build": "next build --webpack && electron-builder",
-    "electron:preview": "concurrently \"next start -p 3000\" \"wait-on http://localhost:3000 && electron .\""
+    "electron:preview": "concurrently \"next start -p 5377\" \"wait-on http://localhost:5377 && cross-env ELECTRON_START_URL=http://localhost:5377 electron .\""
   },
   "dependencies": {
     "@chakra-ui/react": "^3.34.0",

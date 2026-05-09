@@ -1,20 +1,12 @@
-const { app, BrowserWindow, shell } = require("electron")
-const { spawn } = require("child_process")
-const path = require("path")
+import { app, BrowserWindow, shell } from "electron"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const startUrl = process.env.ELECTRON_START_URL || "http://localhost:5377"
 
 let mainWindow
-let nextProcess
-
-function startNextServer() {
-  nextProcess = spawn("node", ["node_modules/.bin/next", "start", "-p", "3000"], {
-    cwd: path.join(__dirname, ".."),
-    env: { ...process.env, NODE_ENV: "production" },
-    shell: true,
-  })
-
-  nextProcess.stdout.on("data", (data) => console.log(`Next: ${data}`))
-  nextProcess.stderr.on("data", (data) => console.error(`Next error: ${data}`))
-}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -29,7 +21,7 @@ function createWindow() {
     },
   })
 
-  mainWindow.loadURL("http://localhost:3000")
+  mainWindow.loadURL(startUrl)
   mainWindow.setMenuBarVisibility(false)
 
   // externe links in browser openen
@@ -40,10 +32,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startNextServer()
-
-  // wacht tot Next klaar is
-  setTimeout(createWindow, 3000)
+  createWindow()
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -51,6 +40,5 @@ app.whenReady().then(() => {
 })
 
 app.on("window-all-closed", () => {
-  if (nextProcess) nextProcess.kill()
   if (process.platform !== "darwin") app.quit()
 })
