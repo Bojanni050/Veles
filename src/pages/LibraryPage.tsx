@@ -1,0 +1,192 @@
+import { useState, useEffect } from "react"
+import { Box, Button, Grid, Heading, HStack, Stack, Text, VStack } from "@chakra-ui/react"
+import { LuDownload, LuLibrary, LuMusic, LuPlay, LuTrash2 } from "react-icons/lu"
+import { getSongs, deleteSong, type Song } from "@/lib/api"
+import { toaster } from "@/components/ui/toaster"
+import { AudioPlayer } from "@/components/AudioPlayer"
+
+export function LibraryPage() {
+  const [songs, setSongs] = useState<Song[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeSong, setActiveSong] = useState<Song | null>(null)
+
+  useEffect(() => {
+    loadSongs()
+  }, [])
+
+  async function loadSongs() {
+    setLoading(true)
+    try {
+      const data = await getSongs()
+      setSongs(data)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      await deleteSong(id)
+      setSongs((prev) => prev.filter((s) => s.id !== id))
+      if (activeSong?.id === id) setActiveSong(null)
+      toaster.success({ title: "Song deleted" })
+    } catch {
+      toaster.error({ title: "Failed to delete song" })
+    }
+  }
+
+  const playableSongs = songs.filter((s) => s.audio_url)
+
+  return (
+    <>
+      <VStack align="stretch" gap="8" pb="24">
+        <Box>
+          <Heading size="2xl" fontWeight="bold" color="fg">
+            Library
+          </Heading>
+          <Text color="fg.muted" mt="1">
+            Your saved songs
+          </Text>
+        </Box>
+
+        {loading ? (
+          <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
+            {[1, 2, 3, 4].map((i) => (
+              <Box
+                key={i}
+                bg="bg.subtle"
+                rounded="xl"
+                p="5"
+                borderWidth="1px"
+                borderColor="border.muted"
+                h="180px"
+              />
+            ))}
+          </Grid>
+        ) : songs.length === 0 ? (
+          <Box
+            bg="bg.subtle"
+            rounded="xl"
+            p="12"
+            borderWidth="1px"
+            borderColor="border.muted"
+            textAlign="center"
+          >
+            <VStack gap="4">
+              <Box p="4" rounded="full" bg="teal.500/10">
+                <Box as={LuLibrary} boxSize="8" color="teal.400" />
+              </Box>
+              <Text color="fg.muted" fontWeight="medium">
+                No songs saved yet. Generate a song and save it here!
+              </Text>
+            </VStack>
+          </Box>
+        ) : (
+          <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
+            {songs.map((song) => {
+              const isActive = activeSong?.id === song.id
+              return (
+                <Box
+                  key={song.id}
+                  bg={isActive ? "teal.500/5" : "bg.subtle"}
+                  rounded="xl"
+                  p="5"
+                  borderWidth="1px"
+                  borderColor={isActive ? "teal.500/30" : "border.muted"}
+                  transition="all"
+                  transitionDuration="fast"
+                  _hover={{ shadow: "md", borderColor: "teal.500/20" }}
+                  cursor={song.audio_url ? "pointer" : "default"}
+                  onClick={() => { if (song.audio_url) setActiveSong(song) }}
+                >
+                  <Stack gap="3">
+                    <HStack justify="space-between">
+                      <HStack gap="3">
+                        <Box
+                          p="2"
+                          rounded="lg"
+                          bg={isActive ? "teal.500/20" : "teal.500/10"}
+                          position="relative"
+                        >
+                          {isActive ? (
+                            <Box as={LuPlay} boxSize="4" color="teal.300" />
+                          ) : (
+                            <Box as={LuMusic} boxSize="4" color="teal.400" />
+                          )}
+                        </Box>
+                        <Box>
+                          <Text fontWeight="bold" color={isActive ? "teal.300" : "fg"} lineClamp={1}>
+                            {song.title}
+                          </Text>
+                          <Text fontSize="xs" color="fg.muted" lineClamp={1}>
+                            {song.genre}
+                          </Text>
+                        </Box>
+                      </HStack>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        colorPalette="red"
+                        onClick={(e) => { e.stopPropagation(); handleDelete(song.id) }}
+                      >
+                        <LuTrash2 />
+                      </Button>
+                    </HStack>
+
+                    <HStack justify="space-between" align="center">
+                      <Text fontSize="xs" color="fg.subtle">
+                        {new Date(song.created_at).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Text>
+                      {song.audio_url ? (
+                        <HStack gap="1">
+                          <Button
+                            as="a"
+                            href={song.audio_url}
+                            download
+                            variant="ghost"
+                            size="xs"
+                            colorPalette="teal"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <LuDownload />
+                            MP3
+                          </Button>
+                          {song.audio_hi_url && (
+                            <Button
+                              as="a"
+                              href={song.audio_hi_url}
+                              download
+                              variant="ghost"
+                              size="xs"
+                              colorPalette="teal"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <LuDownload />
+                              WAV
+                            </Button>
+                          )}
+                        </HStack>
+                      ) : (
+                        <Text fontSize="xs" color="fg.subtle">No audio</Text>
+                      )}
+                    </HStack>
+                  </Stack>
+                </Box>
+              )
+            })}
+          </Grid>
+        )}
+      </VStack>
+
+      <AudioPlayer
+        song={activeSong}
+        songs={playableSongs}
+        onSongChange={setActiveSong}
+      />
+    </>
+  )
+}

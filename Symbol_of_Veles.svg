@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="svg2"
+   width="560"
+   height="600"
+   viewBox="0 0 560.00001 600.00001"
+   sodipodi:docname="znak-welesa.svg"
+   inkscape:version="0.92.1 r15371">
+  <metadata
+     id="metadata8">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs6" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1152"
+     inkscape:window-height="813"
+     id="namedview4"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:zoom="0.80101058"
+     inkscape:cx="321.45079"
+     inkscape:cy="324.20337"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2" />
+  <path
+     style="fill:#000000;stroke-width:0.29550165"
+     d="m 279.3199,598.94108 c -0.9579,-1.8879 -186.5202,-399.8972 -186.5202,-400.0641 0,-0.085 84.2402,-0.1543 187.2003,-0.1543 102.9602,0 187.2003,0.07 187.2003,0.1545 0,0.3024 -186.7667,400.6736 -187.0309,400.9379 -0.162,0.1619 -0.5004,-0.1864 -0.8495,-0.874 z m 43.7781,-245.2277 42.0256,-90.128 -42.464,-0.075 c -23.3552,-0.041 -61.6608,-0.041 -85.1234,0 l -42.6594,0.075 42.5546,91.2565 42.5547,91.2564 0.5431,-1.1284 c 0.2988,-0.6207 19.4546,-41.6861 42.5688,-91.2565 z M 39.0224,83.698778 C 20.5903,44.164278 4.2811,9.191678 2.7798,5.981878 L 0.05,0.14567803 h 35.991 35.9909 l 21.1185,45.28559997 21.1183,45.2856 H 280 445.7313 l 21.1183,-45.2856 21.1186,-45.28559997 H 523.959 559.95 L 557.2203,5.981878 c -1.5014,3.2098 -17.8106,38.1824 -36.2428,77.7169 l -33.513,71.880702 H 280 72.5355 Z"
+     id="path12"
+     inkscape:connector-curvature="0" />
+</svg>
