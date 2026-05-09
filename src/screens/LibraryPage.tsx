@@ -6,16 +6,7 @@ import { LuDownload, LuLibrary, LuMusic, LuPlay, LuTrash2 } from "react-icons/lu
 import { getSongs, deleteSong, type Song } from "@/lib/api"
 import { toaster } from "@/components/ui/toaster"
 import { usePlayer } from "@/lib/player-context"
-
-function downloadFile(url: string): void {
-  const link = document.createElement("a")
-  link.href = url
-  link.download = ""
-  link.rel = "noopener"
-  document.body.append(link)
-  link.click()
-  link.remove()
-}
+import { downloadFile } from "@/lib/download"
 
 export function LibraryPage() {
   const [songs, setSongs] = useState<Song[]>([])
@@ -180,7 +171,10 @@ export function LibraryPage() {
                             variant="ghost"
                             size="xs"
                             colorPalette="teal"
-                            onClick={(e) => { e.stopPropagation(); downloadFile(song.audio_url as string) }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void downloadFile(song.audio_url as string, `${song.title || "song"}.mp3`)
+                            }}
                           >
                             <LuDownload />
                             MP3
@@ -190,7 +184,10 @@ export function LibraryPage() {
                               variant="ghost"
                               size="xs"
                               colorPalette="teal"
-                              onClick={(e) => { e.stopPropagation(); downloadFile(song.audio_hi_url as string) }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                void downloadFile(song.audio_hi_url as string, `${song.title || "song"}.wav`)
+                              }}
                             >
                               <LuDownload />
                               WAV

@@ -29,6 +29,7 @@ import {
   saveSong,
   getBalance,
 } from "@/lib/api"
+import { downloadFile } from "@/lib/download"
 import { usePersistentState } from "@/lib/use-persistent-state"
 
 const models = ["TemPolor v3", "TemPolor v3.5"]
@@ -66,16 +67,6 @@ type GenerationStatus = "idle" | "sending" | "generating" | "done" | "failed"
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown error"
-}
-
-function downloadFile(url: string): void {
-  const link = document.createElement("a")
-  link.href = url
-  link.download = ""
-  link.rel = "noopener"
-  document.body.append(link)
-  link.click()
-  link.remove()
 }
 
 export function GeneratorPage() {
@@ -514,7 +505,7 @@ export function GeneratorPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => downloadFile(resultAudioUrl)}
+                onClick={() => void downloadFile(resultAudioUrl, `${title || "song"}.mp3`)}
               >
                 <LuDownload />
                 Download

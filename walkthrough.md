@@ -135,3 +135,15 @@
 - Findings: The app failed to compile with `Expected '}', got '<eof>'` because `handleGenerateLyrics` in `src/screens/GeneratorPage.tsx` was left incomplete.
 - Conclusions: Restore a complete async lyrics generation handler with explicit loading state transitions and error/success toasts so the component closes correctly and behavior remains consistent.
 - Actions: Implemented and closed `handleGenerateLyrics` in `src/screens/GeneratorPage.tsx` using `generateLyrics`, `setGeneratingLyrics`, `setLyrics`, and toast notifications; validated by re-checking file diagnostics for parser errors.
+
+## 2026-05-09 (Global persistent bottom player)
+
+- Findings: Audio playback controls were mounted only inside the Library screen, so the player disappeared on Generator and Settings routes.
+- Conclusions: Move player state to a shared app-level context and render a single bottom player in the common layout so controls remain visible across the entire app.
+- Actions: Added shared player context at `src/lib/player-context.tsx`, wrapped app providers with `PlayerProvider`, mounted `AudioPlayer` in `src/components/Layout.tsx` with global bottom padding for content, refactored `src/screens/LibraryPage.tsx` to drive the shared queue/current song state, and validated with diagnostics.
+
+## 2026-05-09 (Force direct file downloads)
+
+- Findings: Clicking MP3/WAV download controls could open the browser audio player tab instead of saving the file directly.
+- Conclusions: Use blob-based downloads with explicit filenames to force save behavior, with a link fallback for hosts that reject fetch/CORS.
+- Actions: Added `src/lib/download.ts` with a shared `downloadFile` helper, switched Library MP3/WAV actions in `src/screens/LibraryPage.tsx` to `void downloadFile(...)`, updated the Generator download button in `src/screens/GeneratorPage.tsx` to use the same helper, and validated diagnostics on changed files.
