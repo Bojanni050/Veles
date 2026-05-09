@@ -2,13 +2,17 @@
   "name": "template",
   "private": true,
   "version": "0.0.0",
+  "main": "electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "lint": "eslint .",
     "start": "next start",
-    "import:supabase": "node ./scripts/import-supabase.mjs"
+    "import:supabase": "node ./scripts/import-supabase.mjs",
+    "electron:dev": "concurrently \"next dev --webpack -p 3000\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "next build --webpack && electron-builder",
+    "electron:preview": "concurrently \"next start -p 3000\" \"wait-on http://localhost:3000 && electron .\""
   },
   "dependencies": {
     "@chakra-ui/react": "^3.34.0",
@@ -37,5 +41,34 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "wait-on": "^9.0.5"
+  },
+  "build": {
+    "appId": "com.veles.app",
+    "productName": "Veles",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      ".next/**/*",
+      "node_modules/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "data",
+        "to": "data",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon-256.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

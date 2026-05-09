@@ -21,3 +21,9 @@
 - Findings: Generator drafts and library selection state were reset when moving between routes or refreshing the page.
 - Conclusions: Persist only the page-local UI state that benefits from restoration, and leave SQLite-backed settings in the database.
 - Actions: Added a reusable localStorage state hook, persisted the generator draft fields, persisted the selected library song, and validated with build and lint.
+
+## 2026-05-09 (Package JSON recovery)
+
+- Findings: package.json had two top-level objects merged together, causing npm EJSONPARSE failures.
+- Conclusions: Merge all required Electron and Next fields into one valid JSON object while preserving the webpack-based Next scripts.
+- Actions: Repaired package.json structure, kept Electron scripts/config in the same object, and validated script execution with npm.
