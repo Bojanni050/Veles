@@ -8,7 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
 
-const models = ["TemPolor v3", "TemPolor v3.5"]
+const models = ["TemPolor v3", "TemPolor v3.5", "TemPolor v4.5"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 const nativeMenuSettingKey = "native_windows_menu_enabled"
 const apiRequestLoggingSettingKey = "api_request_logging_enabled"

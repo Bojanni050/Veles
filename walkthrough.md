@@ -153,3 +153,15 @@
 - Findings: Tempolor integration mismatched docs in three places: lyrics generation sent `model` instead of `song_model`, lyrics generation treated `item_ids` as final lyric text, and body-level `status` codes were not enforced.
 - Conclusions: Align requests and lifecycle with documented endpoints by using `song_model`, polling `/open-apis/v1/lyrics/query` for final `lyric` content, and treating non-`200000` response status as API failures.
 - Actions: Updated `src/lib/api.ts` to parse Tempolor `status`, throw on non-success business codes, send `song_model` in lyrics generation, and add lyrics polling that waits for `succeeded` with text from `lyric`/`lyrics`; validated changed files diagnostics.
+
+## 2026-05-09 (Generator inline player redesign)
+
+- Findings: The generated-song result card used the browser-native `<audio controls>`, which looked and behaved differently from the persistent bottom player.
+- Conclusions: Replace the native control with a Chakra-based inline player that mirrors the bottom player's visual language and core controls.
+- Actions: Updated `src/screens/GeneratorPage.tsx` to add a custom inline player with play/pause, time display, seek slider, and volume/mute controls using `audio_hi_url` fallback to `audio_url`; kept existing download/save actions and validated diagnostics.
+
+## 2026-05-09 (TemPolor v4.5 model option)
+
+- Findings: Model selectors in Generator and Settings only exposed `TemPolor v3` and `TemPolor v3.5`.
+- Conclusions: Add `TemPolor v4.5` to both model option lists without changing defaults or storage behavior.
+- Actions: Updated model arrays in `src/screens/GeneratorPage.tsx` and `src/screens/SettingsPage.tsx` to include `TemPolor v4.5`; validated changed files diagnostics.

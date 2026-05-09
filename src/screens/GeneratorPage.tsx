@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
   Box,
   Button,
@@ -8,16 +8,18 @@ import {
   Grid,
   Heading,
   HStack,
+  IconButton,
   Input,
   NativeSelect,
   Progress,
   Skeleton,
+  Slider,
   Stack,
   Text,
   Textarea,
   VStack,
 } from "@chakra-ui/react"
-import { LuCoins, LuDownload, LuLibrary, LuMusic, LuSparkles, LuWandSparkles } from "react-icons/lu"
+import { LuCoins, LuDownload, LuLibrary, LuMusic, LuPause, LuPlay, LuSparkles, LuVolume2, LuVolumeX, LuWandSparkles } from "react-icons/lu"
 import { Field } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
@@ -32,7 +34,7 @@ import {
 import { downloadFile } from "@/lib/download"
 import { usePersistentState } from "@/lib/use-persistent-state"
 
-const models = ["TemPolor v3", "TemPolor v3.5"]
+const models = ["TemPolor v3", "TemPolor v3.5", "TemPolor v4.5"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 
 const voices = [
@@ -69,6 +71,13 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown error"
 }
 
+function formatTime(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return "0:00"
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, "0")}`
+}
+
 export function GeneratorPage() {
   const [title, setTitle] = usePersistentState("veles.generator.title", "")
   const [genre, setGenre] = usePersistentState("veles.generator.genre", "")
@@ -86,6 +95,14 @@ export function GeneratorPage() {
   const [saved, setSaved] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)
   const [pollAttempt, setPollAttempt] = useState(0)
+  const inlineAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [inlinePlaying, setInlinePlaying] = useState(false)
+  const [inlineCurrentTime, setInlineCurrentTime] = useState(0)
+  const [inlineDuration, setInlineDuration] = useState(0)
+  const [inlineVolume, setInlineVolume] = useState(80)
+  const [inlineMuted, setInlineMuted] = useState(false)
+
+  const inlineAudioSrc = resultAudioHiUrl ?? resultAudioUrl
 
   useEffect(() => {
     async function loadDefaults() {
@@ -102,6 +119,35 @@ export function GeneratorPage() {
     }
     loadDefaults()
   }, [setLanguage, setModel])
+
+  useEffect(() => {
+    if (!inlineAudioRef.current) return
+    inlineAudioRef.current.volume = inlineMuted ? 0 : inlineVolume / 100
+  }, [inlineVolume, inlineMuted])
+
+  useEffect(() => {
+    if (!inlineAudioRef.current || !inlineAudioSrc) return
+    inlineAudioRef.current.src = inlineAudioSrc
+    inlineAudioRef.current.load()
+    inlineAudioRef.current.play().then(() => setInlinePlaying(true)).catch(() => setInlinePlaying(false))
+    setInlineCurrentTime(0)
+  }, [inlineAudioSrc])
+
+  const handleInlineSeek = useCallback((details: { value: number[] }) => {
+    if (!inlineAudioRef.current) return
+    inlineAudioRef.current.currentTime = details.value[0]
+    setInlineCurrentTime(details.value[0])
+  }, [])
+
+  function toggleInlinePlay() {
+    if (!inlineAudioRef.current || !inlineAudioSrc) return
+    if (inlinePlaying) {
+      inlineAudioRef.current.pause()
+      setInlinePlaying(false)
+    } else {
+      inlineAudioRef.current.play().then(() => setInlinePlaying(true)).catch(() => {})
+    }
+  }
 
   const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
     const MAX_CONSECUTIVE_FAILURES = 5
@@ -499,7 +545,86 @@ export function GeneratorPage() {
               </Box>
             </HStack>
 
-            <audio controls src={resultAudioHiUrl ?? resultAudioUrl ?? undefined} />
+            <Box
+              bg="bg.panel"
+              borderWidth="1px"
+              borderColor="border.muted"
+              rounded="lg"
+              px="4"
+              py="3"
+            >
+              <audio
+                ref={inlineAudioRef}
+                onTimeUpdate={() => setInlineCurrentTime(inlineAudioRef.current?.currentTime ?? 0)}
+                onLoadedMetadata={() => setInlineDuration(inlineAudioRef.current?.duration ?? 0)}
+                onEnded={() => setInlinePlaying(false)}
+              />
+              <HStack gap="3" align="center">
+                <IconButton
+                  aria-label={inlinePlaying ? "Pause" : "Play"}
+                  variant="solid"
+                  colorPalette="teal"
+                  size="sm"
+                  rounded="full"
+                  onClick={toggleInlinePlay}
+                >
+                  {inlinePlaying ? <LuPause /> : <LuPlay />}
+                </IconButton>
+                <Text fontSize="xs" color="fg.subtle" w="10" textAlign="right">
+                  {formatTime(inlineCurrentTime)}
+                </Text>
+                <Slider.Root
+                  flex="1"
+                  size="sm"
+                  colorPalette="teal"
+                  value={[inlineCurrentTime]}
+                  min={0}
+                  max={inlineDuration || 100}
+                  step={0.5}
+                  onValueChange={handleInlineSeek}
+                >
+                  <Slider.Control>
+                    <Slider.Track>
+                      <Slider.Range />
+                    </Slider.Track>
+                    <Slider.Thumbs />
+                  </Slider.Control>
+                </Slider.Root>
+                <Text fontSize="xs" color="fg.subtle" w="10">
+                  {formatTime(inlineDuration)}
+                </Text>
+                <HStack gap="2" display={{ base: "none", md: "flex" }} w="120px">
+                  <IconButton
+                    aria-label={inlineMuted ? "Unmute" : "Mute"}
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setInlineMuted((prev) => !prev)}
+                  >
+                    {inlineMuted || inlineVolume === 0 ? <LuVolumeX /> : <LuVolume2 />}
+                  </IconButton>
+                  <Slider.Root
+                    flex="1"
+                    size="sm"
+                    colorPalette="teal"
+                    value={[inlineMuted ? 0 : inlineVolume]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={(details) => {
+                      setInlineVolume(details.value[0])
+                      setInlineMuted(false)
+                    }}
+                  >
+                    <Slider.Control>
+                      <Slider.Track>
+                        <Slider.Range />
+                      </Slider.Track>
+                      <Slider.Thumbs />
+                    </Slider.Control>
+                  </Slider.Root>
+                </HStack>
+              </HStack>
+            </Box>
 
             <HStack gap="3">
               <Button
