@@ -20,7 +20,6 @@ import {
   VStack,
 } from "@chakra-ui/react"
 import { LuCoins, LuDownload, LuLibrary, LuMusic, LuPause, LuPlay, LuSparkles, LuVolume2, LuVolumeX, LuWandSparkles } from "react-icons/lu"
-import { Field } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
 import {
@@ -38,8 +37,11 @@ import {
 import { downloadFile } from "@/lib/download"
 import { usePersistentState } from "@/lib/use-persistent-state"
 
-const models = ["TemPolor v3", "TemPolor v3.5", "TemPolor v4.5"]
+const tempolorModels = ["TemPolor v3", "TemPolor v3.5", "TemPolor v4.5"]
+const sunoModels = ["Suno V4_5ALL"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
+
+type Provider = "tempolor" | "suno"
 
 const voices = [
   { id: "", name: "Auto (Default)", description: "Let the AI choose the best voice" },
@@ -85,6 +87,7 @@ function formatTime(seconds: number): string {
 export function GeneratorPage() {
   const [title, setTitle] = usePersistentState("veles.generator.title", "")
   const [genre, setGenre] = usePersistentState("veles.generator.genre", "")
+  const [provider, setProvider] = usePersistentState<Provider>("veles.generator.provider", "tempolor")
   const [model, setModel] = usePersistentState("veles.generator.model", "TemPolor v3.5")
   const [language, setLanguage] = usePersistentState("veles.generator.language", "English")
   const [voiceId, setVoiceId] = usePersistentState("veles.generator.voiceId", "")
@@ -108,6 +111,7 @@ export function GeneratorPage() {
   const [inlineMuted, setInlineMuted] = useState(false)
 
   const inlineAudioSrc = resultAudioHiUrl ?? resultAudioUrl
+  const availableModels = provider === "suno" ? sunoModels : tempolorModels
 
   const formatTempolorCredits = useCallback((value: number): string => {
     const normalized = value < 100 ? Math.round(value * 100) : Math.round(value)
@@ -129,6 +133,19 @@ export function GeneratorPage() {
     }
     loadDefaults()
   }, [refreshProviderCredits, setLanguage, setModel])
+
+  useEffect(() => {
+    if (provider === "suno") {
+      if (!sunoModels.includes(model)) {
+        setModel(sunoModels[0])
+      }
+      return
+    }
+
+    if (!tempolorModels.includes(model)) {
+      setModel(tempolorModels[0])
+    }
+  }, [model, provider, setModel])
 
   useEffect(() => {
     if (!inlineAudioRef.current) return
@@ -212,6 +229,14 @@ export function GeneratorPage() {
   async function handleGenerateLyrics() {
     if (!lyricsPrompt.trim()) return
 
+    if (provider === "suno") {
+      toaster.error({
+        title: "Not available for Suno",
+        description: "Use Tempolor provider for auto lyric generation.",
+      })
+      return
+    }
+
     setGeneratingLyrics(true)
     try {
       const generated = await generateLyrics(lyricsPrompt, model)
@@ -233,7 +258,7 @@ export function GeneratorPage() {
     setSaved(false)
     setPollAttempt(0)
     try {
-      const isSunoModel = model.startsWith("Suno")
+      const isSunoModel = provider === "suno"
 
       if (isSunoModel) {
         const taskId = await generateSunoSong({
@@ -430,6 +455,25 @@ export function GeneratorPage() {
 
             <Box>
               <Text fontWeight="medium" mb="2" fontSize="sm" color="fg">
+                Provider
+              </Text>
+              <NativeSelect.Root>
+                <NativeSelect.Field
+                  aria-label="Provider"
+                  title="Provider"
+                  value={provider}
+                  onChange={(e) => setProvider(e.currentTarget.value as Provider)}
+                  bg="bg"
+                >
+                  <option value="tempolor">Tempolor</option>
+                  <option value="suno">Suno</option>
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
+            </Box>
+
+            <Box>
+              <Text fontWeight="medium" mb="2" fontSize="sm" color="fg">
                 Model
               </Text>
               <NativeSelect.Root>
@@ -440,7 +484,7 @@ export function GeneratorPage() {
                   onChange={(e) => setModel(e.currentTarget.value)}
                   bg="bg"
                 >
-                  {models.map((m) => (
+                  {availableModels.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </NativeSelect.Field>
@@ -468,32 +512,34 @@ export function GeneratorPage() {
               </NativeSelect.Root>
             </Box>
 
-            <Box>
-              <Text fontWeight="medium" mb="2" fontSize="sm" color="fg">
-                Voice
-              </Text>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  aria-label="Voice"
-                    title="Voice"
-                  value={voiceId}
-                  onChange={(e) => setVoiceId(e.currentTarget.value)}
-                  bg="bg"
-                >
-                  {voices.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} — {v.description}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
-              {voiceId && (
-                <Text fontSize="xs" color="fg.subtle" mt="1">
-                  {voices.find((v) => v.id === voiceId)?.description}
+            {provider === "tempolor" && (
+              <Box>
+                <Text fontWeight="medium" mb="2" fontSize="sm" color="fg">
+                  Voice
                 </Text>
-              )}
-            </Box>
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    aria-label="Voice"
+                      title="Voice"
+                    value={voiceId}
+                    onChange={(e) => setVoiceId(e.currentTarget.value)}
+                    bg="bg"
+                  >
+                    {voices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} — {v.description}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+                {voiceId && (
+                  <Text fontSize="xs" color="fg.subtle" mt="1">
+                    {voices.find((v) => v.id === voiceId)?.description}
+                  </Text>
+                )}
+              </Box>
+            )}
           </Stack>
         </Box>
 

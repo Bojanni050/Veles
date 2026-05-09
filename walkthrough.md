@@ -213,3 +213,9 @@
 - Findings: Generator header showed a single credits value and formatted Tempolor balances as decimal values, which did not match expected credit units (e.g., `9.70` vs `970`).
 - Conclusions: Show credits per provider (Tempolor and Suno) and normalize Tempolor display to whole credit units.
 - Actions: Updated `src/screens/GeneratorPage.tsx` to load and display separate Tempolor/Suno credit badges, refresh both balances on load and after generation, and format Tempolor credits as whole units for display; validated diagnostics.
+
+## 2026-05-09 (Generator provider/model selection)
+
+- Findings: Generator only exposed a flat model list and did not let users explicitly select provider before choosing provider-specific models.
+- Conclusions: Add a provider selector and drive model options from the selected provider to keep generation options clear and consistent.
+- Actions: Updated `src/screens/GeneratorPage.tsx` to add persistent provider selection (`Tempolor`/`Suno`), render provider-specific model options, keep model values valid when provider changes, gate voice selection to Tempolor only, and make Suno lyric auto-generation show a clear provider-specific message; validated diagnostics.
