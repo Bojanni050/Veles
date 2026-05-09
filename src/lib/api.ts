@@ -1,5 +1,3 @@
-import { supabase } from "./supabase"
-
 export interface Song {
   id: number
   title: string
@@ -14,73 +12,104 @@ export interface Song {
   created_at: string
 }
 
+type SettingResponse = {
+  value: string | null
+}
+
+type SongResponse = {
+  data: Song
+}
+
+type SongsResponse = {
+  data: Song[]
+}
+
+async function readJson<T>(res: Response): Promise<T> {
+  const data = await res.json() as T | { error?: string }
+  if (!res.ok) {
+    const message = typeof data === "object" && data !== null && "error" in data
+      ? data.error
+      : `API error: ${res.status}`
+    throw new Error(message || `API error: ${res.status}`)
+  }
+  return data as T
+}
+
+async function getSettingValue(key: string): Promise<string | null> {
+  const res = await fetch(`/api/settings/${encodeURIComponent(key)}`)
+  const data = await readJson<SettingResponse>(res)
+  return data.value
+}
+
+async function saveSettingValue(key: string, value: string): Promise<void> {
+  const res = await fetch(`/api/settings/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ value }),
+  })
+
+  await readJson<{ ok: true }>(res)
+}
+
 export async function getApiKey(): Promise<string | null> {
-  const { data } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "tempolor_api_key")
-    .maybeSingle()
-  return data?.value ?? null
+  return getSettingValue("tempolor_api_key")
 }
 
 export async function saveApiKey(apiKey: string): Promise<void> {
-  await supabase
-    .from("settings")
-    .upsert({ key: "tempolor_api_key", value: apiKey })
+  await saveSettingValue("tempolor_api_key", apiKey)
 }
 
 export async function getSetting(key: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", key)
-    .maybeSingle()
-  return data?.value ?? null
+  return getSettingValue(key)
 }
 
 export async function saveSetting(key: string, value: string): Promise<void> {
-  await supabase.from("settings").upsert({ key, value })
+  await saveSettingValue(key, value)
 }
 
 export async function getSongs(): Promise<Song[]> {
-  const { data } = await supabase
-    .from("songs")
-    .select("*")
-    .order("created_at", { ascending: false })
-  return (data as Song[]) ?? []
+  const res = await fetch("/api/songs")
+  const data = await readJson<SongsResponse>(res)
+  return data.data
 }
 
 export async function saveSong(song: Omit<Song, "id" | "created_at">): Promise<Song> {
-  const { data, error } = await supabase
-    .from("songs")
-    .insert(song)
-    .select()
-    .single()
-  if (error) throw error
-  return data as Song
+  const res = await fetch("/api/songs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(song),
+  })
+  const data = await readJson<SongResponse>(res)
+  return data.data
 }
 
 export async function deleteSong(id: number): Promise<void> {
-  await supabase.from("songs").delete().eq("id", id)
+  const res = await fetch(`/api/songs/${id}`, {
+    method: "DELETE",
+  })
+
+  if (!res.ok) {
+    const data = await res.json() as { error?: string }
+    throw new Error(data.error || `API error: ${res.status}`)
+  }
 }
 
-const PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tempolor-proxy`
+const PROXY_URL = "/api/tempolor-proxy"
 
 async function tempolorFetch(path: string, body: object, method = "POST") {
   const res = await fetch(PROXY_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
     },
     body: JSON.stringify({ path, body, method }),
   })
 
-  const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.error || `API error: ${res.status}`)
-  }
-  return data
+  return readJson<{ data?: unknown; error?: string }>(res)
 }
 
 export async function testApiKey(): Promise<void> {
