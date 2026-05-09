@@ -18,6 +18,7 @@ import {
   VStack,
 } from "@chakra-ui/react"
 import { LuCoins, LuDownload, LuLibrary, LuMusic, LuSparkles, LuWandSparkles } from "react-icons/lu"
+import { Field } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
 import {
@@ -104,62 +105,68 @@ export function GeneratorPage() {
       try {
         const b = await getBalance()
         setBalance(b)
-      } catch {
-        // API key might not be set
-      }
-    }
-    loadDefaults()
-  }, [setLanguage, setModel])
-
-  const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
-    const MAX_CONSECUTIVE_FAILURES = 5
-    let consecutiveFailures = 0
-    for (let i = 0; i < maxAttempts; i++) {
-      setPollAttempt(i + 1)
-      await new Promise((r) => setTimeout(r, 3000))
-      try {
+              <Field label="Model">
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    aria-label="Model"
+                    title="Model"
+                    value={model}
+                    onChange={(e) => setModel(e.currentTarget.value)}
+                    bg="bg"
+                  >
+                    {models.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </Field>
         const result = await querySongStatus(itemIds)
         consecutiveFailures = 0
         if (result.status === "succeeded" || result.status === "completed" || result.status === "complete" || result.audio_url) {
           return { audio_url: result.audio_url ?? null, audio_hi_url: result.audio_hi_url ?? null }
         }
         if (result.status === "failed" || result.status === "error") {
-          return { audio_url: null, audio_hi_url: null }
-        }
-      } catch (err) {
-        consecutiveFailures++
-        if (process.env.NODE_ENV === "development") {
-          console.error(`[pollForResult] fetch error (attempt ${i + 1}, consecutive: ${consecutiveFailures}):`, err)
-        }
-        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("[pollForResult] stopping early after", MAX_CONSECUTIVE_FAILURES, "consecutive failures")
-          }
-          return { audio_url: null, audio_hi_url: null }
-        }
-      }
+              <Field label="Language">
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    aria-label="Language"
+                    title="Language"
+                    value={language}
+                    onChange={(e) => setLanguage(e.currentTarget.value)}
+                    bg="bg"
+                  >
+                    {languages.map((l) => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </Field>
     }
     return { audio_url: null, audio_hi_url: null }
   }, [])
 
   async function handleGenerateLyrics() {
     if (!lyricsPrompt.trim()) return
-    setGeneratingLyrics(true)
-    try {
-      const itemIds = await generateLyrics(lyricsPrompt, model)
-      const result = await pollForLyrics(itemIds)
-      if (result) {
-        setLyrics(result)
-        toaster.success({ title: "Lyrics generated" })
-      } else {
-        toaster.error({ title: "Failed to generate lyrics", description: "Timed out or error occurred." })
-      }
-    } catch (error: unknown) {
-      toaster.error({ title: "Error", description: getErrorMessage(error) })
-    } finally {
-      setGeneratingLyrics(false)
-    }
-  }
+              <Field label="Voice">
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    aria-label="Voice"
+                    title="Voice"
+                    value={voiceId}
+                    onChange={(e) => setVoiceId(e.currentTarget.value)}
+                    bg="bg"
+                  >
+                    {voices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} — {v.description}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </Field>
 
   async function pollForLyrics(itemIds: string[]): Promise<string | null> {
     const MAX_CONSECUTIVE_FAILURES = 5

@@ -123,3 +123,9 @@
 - Findings: The generator page crashed at render time because Chakra UI 3 uses the compound `Progress.Root` API rather than a direct `Progress` component.
 - Conclusions: Keep the same progress semantics but render the v3 compound structure so the page can mount normally.
 - Actions: Replaced the direct `<Progress>` usage in `src/screens/GeneratorPage.tsx` with `Progress.Root`/`Progress.Track`/`Progress.Range` and preserved the existing value, striped, and animated behavior.
+
+## 2026-05-09 (Generator select accessibility fix)
+
+- Findings: After the progress fix, the generator screen still failed a Chakra accessible-name check on the select controls.
+- Conclusions: Use the repo's existing Chakra `Field` wrapper so the select labels are associated through the component system instead of relying on ad hoc attributes.
+- Actions: Wrapped the generator model, language, and voice selects in `Field` and kept the select options and behavior unchanged.
