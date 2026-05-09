@@ -219,3 +219,9 @@
 - Findings: Generator only exposed a flat model list and did not let users explicitly select provider before choosing provider-specific models.
 - Conclusions: Add a provider selector and drive model options from the selected provider to keep generation options clear and consistent.
 - Actions: Updated `src/screens/GeneratorPage.tsx` to add persistent provider selection (`Tempolor`/`Suno`), render provider-specific model options, keep model values valid when provider changes, gate voice selection to Tempolor only, and make Suno lyric auto-generation show a clear provider-specific message; validated diagnostics.
+
+## 2026-05-09 (Suno model options update)
+
+- Findings: Suno provider model dropdown had only a single placeholder model and did not match available Suno model variants.
+- Conclusions: Align Suno model options with the current selectable variants shown in the Suno UI.
+- Actions: Updated `src/screens/GeneratorPage.tsx` Suno model list to `V5.5`, `V5`, `V4.5+`, `V4.5`, `V4`, and `V4.5ALL`; validated diagnostics.

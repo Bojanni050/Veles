@@ -38,7 +38,7 @@ import { downloadFile } from "@/lib/download"
 import { usePersistentState } from "@/lib/use-persistent-state"
 
 const tempolorModels = ["TemPolor v3", "TemPolor v3.5", "TemPolor v4.5"]
-const sunoModels = ["Suno V4_5ALL"]
+const sunoModels = ["V5.5", "V5", "V4.5+", "V4.5", "V4", "V4.5ALL"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 
 type Provider = "tempolor" | "suno"
