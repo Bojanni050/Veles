@@ -261,3 +261,9 @@
 - Findings: Settings had only a partial Gemini key block and no direct Lyria proxy connectivity test.
 - Conclusions: Upgrade the Gemini section to a full Lyria key management section using the Lyria-specific API helpers and add an end-to-end proxy test action.
 - Actions: Updated `src/screens/SettingsPage.tsx` to load key via `getLyriaApiKey()`, save via `saveLyriaApiKey()`, relabel field to `Google Gemini API Key (for Lyria 3)`, add helper text for `aistudio.google.com/apikey`, and add a `Test API Key` button that POSTs `{ prompt: "test", model: "clip" }` to `/api/lyria-proxy` and validates audio response before showing success toast; validated diagnostics.
+
+## 2026-05-09 (Lyria key source fallback fix)
+
+- Findings: Lyria test calls failed with `GEMINI_API_KEY is not configured` even after saving the Gemini key in Settings, because the proxy read only process env.
+- Conclusions: Resolve key lookup from saved settings first and keep env as fallback so key changes work immediately without restart.
+- Actions: Updated `app/api/lyria-proxy/route.ts` to read `getSettingValue("gemini_api_key") || process.env.GEMINI_API_KEY` and return a clearer missing-key error; validated diagnostics.

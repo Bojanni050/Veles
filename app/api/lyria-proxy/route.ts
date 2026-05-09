@@ -50,9 +50,9 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Field 'model' must be 'pro' or 'clip'" }, { status: 400 })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = getSettingValue("gemini_api_key") || process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return Response.json({ error: "GEMINI_API_KEY is not configured" }, { status: 400 })
+    return Response.json({ error: "Gemini API key not configured" }, { status: 400 })
   }
 
   const modelName = payload.model === "pro" ? "lyria-3-pro-preview" : "lyria-3-clip-preview"

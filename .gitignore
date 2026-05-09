@@ -26,3 +26,4 @@ data/*.db-*
 *.sln
 *.sw?
 dist-electron/
+.env
