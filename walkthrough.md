@@ -105,3 +105,9 @@
 - Findings: Song generation polls up to 60 times with 3-second intervals (3 minutes total), but users see no progress indication and don't know how long to wait.
 - Conclusions: Track poll attempt count in state and display both a progress bar and attempt counter (e.g., "Attempt 12 of 60") during generation to provide real-time feedback.
 - Actions: Added `pollAttempt` state to [src/screens/GeneratorPage.tsx](src/screens/GeneratorPage.tsx); imported `Progress` component from Chakra UI; updated `pollForResult` to increment attempt on each iteration; reset attempt counter at start and end of `handleGenerateSong`; replaced skeleton loader with animated striped progress bar and attempt text; validated with lint.
+
+## 2026-05-09 (Tempolor flat payload parsing)
+
+- Findings: `tempolorFetch` only handled wrapped `{ data: ... }` responses, but Tempolor can also return flat `{ item_ids: [...] }` or `{ error: "..." }` payloads.
+- Conclusions: Parse the raw body directly in the helper so the code can distinguish empty or unparseable responses from valid flat payloads and surface top-level errors cleanly.
+- Actions: Updated `src/lib/api.ts` so `tempolorFetch` logs raw payloads in development, treats flat `item_ids` responses as data, throws top-level `error` messages, and only uses the empty-response error when the body is truly empty or invalid.

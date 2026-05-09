@@ -25,8 +25,9 @@ type SongsResponse = {
 }
 
 type TempolorResponse<T> = {
-  data: T
+  data?: T
   error?: string
+  item_ids?: string[]
 }
 
 type TempolorSongStatusItem = {
@@ -135,10 +136,34 @@ async function tempolorFetch<T>(path: string, body: object, method = "POST"): Pr
     body: JSON.stringify({ path, body, method }),
   })
 
-  const payload = await readJson<TempolorResponse<T>>(res)
+  const rawBody = await res.text()
+  let payload: TempolorResponse<T> | null = null
+
+  if (rawBody.trim().length > 0) {
+    try {
+      payload = JSON.parse(rawBody) as TempolorResponse<T>
+    } catch {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[tempolorFetch] Unparseable response body:", rawBody)
+      }
+      throw new Error("Tempolor returned empty response data.")
+    }
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.error("[tempolorFetch] Raw payload:", payload)
+  }
+
+  if (payload === null) {
+    throw new Error("Tempolor returned empty response data.")
+  }
 
   if (typeof payload.error === "string" && payload.error.trim().length > 0) {
     throw new Error(payload.error)
+  }
+
+  if ((payload.data === null || payload.data === undefined) && Array.isArray(payload.item_ids)) {
+    payload = { ...payload, data: payload as unknown as T }
   }
 
   if (payload.data === null || payload.data === undefined) {
