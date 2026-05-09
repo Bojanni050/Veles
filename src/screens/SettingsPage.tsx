@@ -3,7 +3,16 @@
 import { useState, useEffect } from "react"
 import { Box, Button, Heading, HStack, Input, NativeSelect, Stack, Text, VStack } from "@chakra-ui/react"
 import { LuFlaskConical, LuSettings } from "react-icons/lu"
-import { getApiKey, saveApiKey, getSetting, saveSetting, testApiKey } from "@/lib/api"
+import {
+  getApiKey,
+  saveApiKey,
+  getSetting,
+  saveSetting,
+  testApiKey,
+  getSunoApiKey,
+  saveSunoApiKey,
+  getSunoBalance,
+} from "@/lib/api"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
@@ -39,6 +48,7 @@ function getErrorMessage(error: unknown): string {
 
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState("")
+  const [sunoApiKey, setSunoApiKey] = useState("")
   const [defaultModel, setDefaultModel] = useState("TemPolor v3.5")
   const [defaultLanguage, setDefaultLanguage] = useState("English")
   const [nativeMenuEnabled, setNativeMenuEnabled] = useState(false)
@@ -47,11 +57,15 @@ export function SettingsPage() {
   const [callbackBaseUrl, setCallbackBaseUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [sunoSaving, setSunoSaving] = useState(false)
+  const [sunoTesting, setSunoTesting] = useState(false)
 
   useEffect(() => {
     async function load() {
       const key = await getApiKey()
       if (key) setApiKey(key)
+      const sunoKey = await getSunoApiKey()
+      if (sunoKey) setSunoApiKey(sunoKey)
       const model = await getSetting("default_model")
       if (model) setDefaultModel(model)
       const lang = await getSetting("default_language")
@@ -97,6 +111,33 @@ export function SettingsPage() {
       toaster.error({ title: "Connection failed", description: getErrorMessage(error) })
     } finally {
       setTesting(false)
+    }
+  }
+
+  async function handleSaveSunoApi() {
+    setSunoSaving(true)
+    try {
+      await saveSunoApiKey(sunoApiKey)
+      toaster.success({ title: "Suno API key saved", description: "Your Suno key has been updated." })
+    } catch (error: unknown) {
+      toaster.error({ title: "Error", description: getErrorMessage(error) })
+    } finally {
+      setSunoSaving(false)
+    }
+  }
+
+  async function handleTestSunoApi() {
+    setSunoTesting(true)
+    try {
+      const remainingCredits = await getSunoBalance()
+      toaster.success({
+        title: "Suno connection successful",
+        description: `Remaining credits: ${remainingCredits}`,
+      })
+    } catch (error: unknown) {
+      toaster.error({ title: "Suno connection failed", description: getErrorMessage(error) })
+    } finally {
+      setSunoTesting(false)
     }
   }
 
@@ -156,6 +197,42 @@ export function SettingsPage() {
             <Text fontSize="xs" color="fg.subtle" mt="1">
               Get your key from the Tempolor dashboard
             </Text>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              Suno API Key
+            </Text>
+            <PasswordInput
+              placeholder="Enter your Suno API key"
+              value={sunoApiKey}
+              onChange={(e) => setSunoApiKey(e.target.value)}
+              bg="bg"
+              size="lg"
+            />
+            <Text fontSize="xs" color="fg.subtle" mt="1">
+              Get your API key at sunoapi.org/api-key
+            </Text>
+            <HStack gap="3" mt="3">
+              <Button
+                colorPalette="teal"
+                size="sm"
+                onClick={handleSaveSunoApi}
+                loading={sunoSaving}
+              >
+                <LuSettings />
+                Save Suno Key
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestSunoApi}
+                loading={sunoTesting}
+              >
+                <LuFlaskConical />
+                Test Suno Key
+              </Button>
+            </HStack>
           </Box>
 
           <Box>

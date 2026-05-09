@@ -26,10 +26,13 @@ import { toaster } from "@/components/ui/toaster"
 import {
   generateLyrics,
   generateSong,
+  generateSunoSong,
   querySongStatus,
+  querySunoStatus,
   getSetting,
   saveSong,
   getBalance,
+  type SunoStatusSunoItem,
 } from "@/lib/api"
 import { downloadFile } from "@/lib/download"
 import { usePersistentState } from "@/lib/use-persistent-state"
@@ -180,6 +183,25 @@ export function GeneratorPage() {
     return { audio_url: null, audio_hi_url: null }
   }, [])
 
+  const pollForSunoResult = useCallback(async (taskId: string, maxAttempts = 60): Promise<{
+    status: string
+    audioUrl?: string
+    sunoData?: SunoStatusSunoItem[]
+  }> => {
+    for (let i = 0; i < maxAttempts; i++) {
+      setPollAttempt(i + 1)
+      await new Promise((r) => setTimeout(r, 3000))
+      const result = await querySunoStatus(taskId)
+      if (result.status === "completed") {
+        return result
+      }
+      if (result.status === "failed") {
+        return result
+      }
+    }
+    return { status: "failed" }
+  }, [])
+
   async function handleGenerateLyrics() {
     if (!lyricsPrompt.trim()) return
 
@@ -204,6 +226,63 @@ export function GeneratorPage() {
     setSaved(false)
     setPollAttempt(0)
     try {
+      const isSunoModel = model.startsWith("Suno")
+
+      if (isSunoModel) {
+        const taskId = await generateSunoSong({
+          title: title || "Untitled",
+          style: genre,
+          prompt: lyrics,
+          model,
+          instrumental: false,
+        })
+
+        setStatus("generating")
+        const sunoResult = await pollForSunoResult(taskId)
+        if (sunoResult.status === "completed" && Array.isArray(sunoResult.sunoData) && sunoResult.sunoData.length > 0) {
+          const song1 = sunoResult.sunoData[0]
+          const song2 = sunoResult.sunoData[1]
+
+          await saveSong({
+            title: `${title || "Untitled"} (1)`,
+            genre,
+            lyrics: song1?.prompt ?? lyrics,
+            model,
+            language,
+            status: "completed",
+            item_ids: null,
+            audio_url: song1?.audioUrl ?? null,
+            audio_hi_url: null,
+          })
+
+          await saveSong({
+            title: `${title || "Untitled"} (2)`,
+            genre,
+            lyrics: song2?.prompt ?? song1?.prompt ?? lyrics,
+            model,
+            language,
+            status: "completed",
+            item_ids: null,
+            audio_url: song2?.audioUrl ?? null,
+            audio_hi_url: null,
+          })
+
+          setResultAudioUrl(song1?.audioUrl ?? null)
+          setResultAudioHiUrl(null)
+          setSaved(true)
+          setStatus("done")
+          setPollAttempt(0)
+          toaster.success({ title: "2 songs saved to library" })
+        } else {
+          setStatus("failed")
+          setPollAttempt(0)
+          const timeoutMessage = "Song generation timed out before audio was returned."
+          setGenerationError(timeoutMessage)
+          toaster.error({ title: "Generation failed", description: timeoutMessage })
+        }
+        return
+      }
+
       const prompt = `${genre}${language !== "English" ? `, language: ${language}` : ""}`
       const itemIds = await generateSong(prompt, lyrics, model, voiceId || undefined)
       setStatus("generating")
@@ -635,15 +714,16 @@ export function GeneratorPage() {
                 <LuDownload />
                 Download
               </Button>
-              <Button
-                colorPalette="teal"
-                size="sm"
-                onClick={handleSaveToLibrary}
-                disabled={saved}
-              >
-                <LuLibrary />
-                {saved ? "Saved" : "Save to Library"}
-              </Button>
+              {!saved && (
+                <Button
+                  colorPalette="teal"
+                  size="sm"
+                  onClick={handleSaveToLibrary}
+                >
+                  <LuLibrary />
+                  Save to Library
+                </Button>
+              )}
             </HStack>
           </Stack>
         </Box>

@@ -139,6 +139,37 @@ export async function deleteSong(id: number): Promise<void> {
 }
 
 const PROXY_URL = "/api/tempolor-proxy"
+const SUNO_PROXY_URL = "/api/suno-proxy"
+
+type SunoEnvelope<T> = {
+  code?: number
+  msg?: string
+  data?: T
+}
+
+type SunoGenerateResponse = {
+  taskId?: string
+}
+
+export type SunoStatusSunoItem = {
+  audioUrl?: string
+  prompt?: string
+  imageUrl?: string
+}
+
+type SunoStatusResponseData = {
+  status?: string
+  response?: {
+    sunoData?: SunoStatusSunoItem[]
+  }
+}
+
+type SunoBalanceResponseData = {
+  remainingCredits?: number
+  remaining_credits?: number
+  credits?: number
+  balance?: number
+}
 
 async function tempolorFetch<T>(path: string, body: object, method = "POST"): Promise<TempolorResponse<T>> {
   const res = await fetch(PROXY_URL, {
@@ -197,6 +228,38 @@ async function tempolorFetch<T>(path: string, body: object, method = "POST"): Pr
   }
 
   return payload
+}
+
+async function sunoFetch<T>(
+  path: string,
+  body?: object,
+  method = "POST",
+  queryParams?: Record<string, string>,
+): Promise<T> {
+  const normalizedMethod = method.toUpperCase()
+  const payload = normalizedMethod === "GET"
+    ? { path, queryParams, method: "GET" }
+    : { path, body: body || {}, method: normalizedMethod }
+
+  const res = await fetch(SUNO_PROXY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const envelope = await readJson<SunoEnvelope<T>>(res)
+
+  if (typeof envelope.code === "number" && envelope.code !== 200) {
+    throw new Error(envelope.msg || `Suno API error code: ${envelope.code}`)
+  }
+
+  if (envelope.data === null || envelope.data === undefined) {
+    throw new Error("Suno API returned empty response data.")
+  }
+
+  return envelope.data
 }
 
 function getItemIdsFromResponse(data: { item_ids?: string[] } | null | undefined): string[] {
@@ -336,4 +399,83 @@ export async function querySongStatus(itemIds: string[]): Promise<QueryResult> {
     return { status: res.data.status ?? "pending", audio_url: res.data.audio_url }
   }
   return { status: "pending" }
+}
+
+export async function generateSunoSong(params: {
+  title: string
+  style: string
+  prompt: string
+  model: string
+  instrumental: boolean
+}): Promise<string> {
+  const data = await sunoFetch<SunoGenerateResponse>("/api/v1/generate", {
+    customMode: true,
+    instrumental: params.instrumental,
+    model: params.model,
+    callBackUrl: "https://example.com/noop",
+    prompt: params.prompt,
+    style: params.style,
+    title: params.title,
+  })
+
+  if (!data.taskId) {
+    throw new Error("Suno did not return a taskId.")
+  }
+
+  return data.taskId
+}
+
+export async function querySunoStatus(taskId: string): Promise<{
+  status: string
+  audioUrl?: string
+  imageUrl?: string
+  lyrics?: string
+  sunoData?: SunoStatusSunoItem[]
+}> {
+  const data = await sunoFetch<SunoStatusResponseData>(
+    "/api/v1/generate/record-info",
+    undefined,
+    "GET",
+    { taskId },
+  )
+
+  const rawStatus = data.status ?? ""
+  const mappedStatus = rawStatus === "SUCCESS"
+    ? "completed"
+    : rawStatus === "PENDING" || rawStatus === "TEXT_SUCCESS" || rawStatus === "FIRST_SUCCESS"
+      ? "pending"
+      : "failed"
+
+  const first = data.response?.sunoData?.[0]
+
+  return {
+    status: mappedStatus,
+    audioUrl: rawStatus === "SUCCESS" ? first?.audioUrl : undefined,
+    imageUrl: first?.imageUrl,
+    lyrics: first?.prompt,
+    sunoData: data.response?.sunoData,
+  }
+}
+
+export async function getSunoApiKey(): Promise<string | null> {
+  return getSetting("suno_api_key")
+}
+
+export async function saveSunoApiKey(key: string): Promise<void> {
+  await saveSetting("suno_api_key", key)
+}
+
+export async function getSunoBalance(): Promise<number> {
+  const data = await sunoFetch<SunoBalanceResponseData>("/api/v1/credits/balance", undefined, "GET")
+
+  const remaining = data.remainingCredits
+    ?? data.remaining_credits
+    ?? data.credits
+    ?? data.balance
+
+  if (typeof remaining !== "number") {
+    throw new Error("Suno balance response did not include remaining credits.")
+  }
+
+  return remaining
 }

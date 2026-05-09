@@ -165,3 +165,27 @@
 - Findings: Model selectors in Generator and Settings only exposed `TemPolor v3` and `TemPolor v3.5`.
 - Conclusions: Add `TemPolor v4.5` to both model option lists without changing defaults or storage behavior.
 - Actions: Updated model arrays in `src/screens/GeneratorPage.tsx` and `src/screens/SettingsPage.tsx` to include `TemPolor v4.5`; validated changed files diagnostics.
+
+## 2026-05-09 (Suno proxy API route)
+
+- Findings: Suno API calls required a dedicated proxy route that reads `suno_api_key` from settings, supports query params, and mirrors Tempolor proxy logging behavior.
+- Conclusions: Implement a server-side Suno proxy handler plus a Next route wrapper, preserving raw upstream JSON responses and status codes.
+- Actions: Added `server/suno-proxy.ts` with key lookup, optional request/response logging via `api_request_logging_enabled`, query string forwarding, `Authorization: Bearer <key>`, and upstream pass-through response; added `app/api/suno-proxy/route.ts` POST wrapper; validated changed files diagnostics.
+
+## 2026-05-09 (Suno client functions in api.ts)
+
+- Findings: Frontend code had no Suno client helpers to call the new `/api/suno-proxy` route for song generation, polling, key management, and credits.
+- Conclusions: Add a typed `sunoFetch` helper mirroring Tempolor conventions and expose focused Suno functions for generation, status checks, settings, and balance.
+- Actions: Updated `src/lib/api.ts` with `sunoFetch<T>` (supports POST and GET via `queryParams`, enforces `code === 200`, returns `data`), added `generateSunoSong`, `querySunoStatus`, `getSunoApiKey`, `saveSunoApiKey`, and `getSunoBalance`, and validated diagnostics.
+
+## 2026-05-09 (Suno key section in Settings)
+
+- Findings: Settings only managed the Tempolor API key, but Suno integration also needed direct key management and connection validation in the same screen.
+- Conclusions: Add a Suno API key block under Tempolor with the same password-input pattern and dedicated save/test actions.
+- Actions: Updated `src/screens/SettingsPage.tsx` to load `getSunoApiKey()` on mount, render a `PasswordInput` labeled "Suno API Key" with helper text for `sunoapi.org/api-key`, add `Save Suno Key` action using `saveSunoApiKey()`, and add `Test Suno Key` action using `getSunoBalance()` to show remaining credits in a toast; validated diagnostics.
+
+## 2026-05-09 (Suno dual-save generation result)
+
+- Findings: The generator lacked a full Suno completion branch that persisted both songs returned in `sunoData`, and UI actions did not reflect auto-saved Suno results.
+- Conclusions: Add a Suno-specific polling/success path that stores both generated tracks in the library, sets the first audio for inline playback, and marks the result as already saved.
+- Actions: Updated `src/lib/api.ts` to include `sunoData` in `querySunoStatus` results and updated `src/screens/GeneratorPage.tsx` to route Suno models through `generateSunoSong` + `querySunoStatus`, save two songs (`(1)` and `(2)`) with Suno fields, set first `audioUrl` as result playback URL, show toast "2 songs saved to library", call `setSaved(true)`, and hide the Save button once saved; validated diagnostics.
