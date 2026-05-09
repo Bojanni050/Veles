@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { Box, Button, Grid, Heading, HStack, Stack, Text, VStack } from "@chakra-ui/react"
 import { LuDownload, LuLibrary, LuMusic, LuPlay, LuTrash2 } from "react-icons/lu"

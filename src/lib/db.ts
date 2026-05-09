@@ -1,18 +1,14 @@
 import Database from "better-sqlite3"
 import { mkdirSync } from "node:fs"
-import { dirname } from "node:path"
-import { fileURLToPath } from "node:url"
+import { dirname, resolve } from "node:path"
 
-const databasePath = fileURLToPath(new URL("../../data/veles.db", import.meta.url))
+const databasePath = resolve(process.cwd(), "data", "veles.db")
 
-mkdirSync(dirname(databasePath), { recursive: true })
+function initializeDatabase(connection: Database.Database): Database.Database {
+  connection.pragma("journal_mode = WAL")
+  connection.pragma("foreign_keys = ON")
 
-export const db = new Database(databasePath)
-
-db.pragma("journal_mode = WAL")
-db.pragma("foreign_keys = ON")
-
-db.exec(`
+  connection.exec(`
 CREATE TABLE IF NOT EXISTS songs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -32,3 +28,20 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 `)
+
+  return connection
+}
+
+type DbGlobal = {
+  __velesDb?: Database.Database
+}
+
+const globalForDb = globalThis as typeof globalThis & DbGlobal
+
+mkdirSync(dirname(databasePath), { recursive: true })
+
+export const db = globalForDb.__velesDb ?? initializeDatabase(new Database(databasePath))
+
+if (!globalForDb.__velesDb) {
+  globalForDb.__velesDb = db
+}

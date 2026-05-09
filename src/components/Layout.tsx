@@ -1,6 +1,9 @@
-import { Box, Flex, HStack, IconButton, Text, VStack } from "@chakra-ui/react"
+"use client"
+
+import { Box, Flex, HStack, Text, VStack } from "@chakra-ui/react"
 import { LuLibrary, LuMusic, LuSettings, LuWandSparkles } from "react-icons/lu"
-import { Link, useLocation } from "react-router-dom"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { ColorModeButton } from "@/components/ui/color-mode"
 
 const navItems = [
@@ -10,7 +13,7 @@ const navItems = [
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const location = useLocation()
+  const pathname = usePathname()
 
   return (
     <Flex minH="100vh" bg="bg">
@@ -41,12 +44,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <VStack gap="1" align="stretch" flex="1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = pathname === item.path
               return (
                 <Box
                   key={item.path}
                   as={Link}
-                  to={item.path}
+                  href={item.path}
                   display="flex"
                   alignItems="center"
                   gap="3"

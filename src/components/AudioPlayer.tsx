@@ -1,3 +1,5 @@
+"use client"
+
 import { useRef, useState, useEffect, useCallback } from "react"
 import { Box, Flex, HStack, IconButton, Slider, Text } from "@chakra-ui/react"
 import {
