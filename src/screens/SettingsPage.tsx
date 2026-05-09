@@ -57,7 +57,14 @@ export function SettingsPage() {
       if (lang) setDefaultLanguage(lang)
 
       const menuBridge = getNativeMenuBridge()
-      const supportsNativeMenu = menuBridge?.isSupported() ?? false
+      let supportsNativeMenu = false
+      if (menuBridge) {
+        try {
+          supportsNativeMenu = (await menuBridge.getState()).supported
+        } catch {
+          supportsNativeMenu = menuBridge.isSupported()
+        }
+      }
       setNativeMenuSupported(supportsNativeMenu)
 
       const nativeMenuValue = parseBooleanSetting(await getSetting(nativeMenuSettingKey))

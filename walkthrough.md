@@ -75,3 +75,15 @@
 - Findings: Generator failure UI always showed an API-key-specific message even when the real cause was timeout or a different upstream error.
 - Conclusions: Capture and display the actual generation error text so users can act on the correct failure reason.
 - Actions: Added explicit generation error state in `GeneratorPage`, set timeout-specific and caught-error messages during generation flow, replaced the hardcoded failed-state text with dynamic error output, and validated with lint.
+
+## 2026-05-09 (Native menu toggle availability fix)
+
+- Findings: The native Windows menu toggle could remain disabled in Electron mode because preload bridge initialization was not reliable in the ESM `.js` preload setup.
+- Conclusions: Use a CommonJS preload entry and derive support state through IPC (`getState`) to make desktop detection deterministic.
+- Actions: Switched BrowserWindow preload to `electron/preload.cjs`, added the CJS preload bridge implementation, updated Settings support detection to read `supported` from bridge state, and validated with lint plus Electron startup readiness.
+
+## 2026-05-09 (Native menu detection fallback)
+
+- Findings: A transient IPC failure during settings load could still keep the native menu toggle disabled.
+- Conclusions: Add a fallback that uses bridge platform detection when IPC state lookup fails.
+- Actions: Added try/catch fallback in Settings native-menu support detection (`getState` -> `isSupported`) and validated with lint.
