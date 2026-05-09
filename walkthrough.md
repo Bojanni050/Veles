@@ -39,3 +39,9 @@
 - Findings: Default Electron development ports were conflicting with other local processes and causing repeated `EADDRINUSE` startup failures.
 - Conclusions: Standardize both Electron and regular Next runtime scripts on a dedicated port and keep the main-process fallback URL aligned with script-level configuration.
 - Actions: Verified port `5377` was available, updated Electron dev/preview scripts and standard Next dev/start scripts to use `5377`, aligned `ELECTRON_START_URL` and main fallback URL to `http://localhost:5377`, and validated startup reaches Next readiness on the new port.
+
+## 2026-05-09 (Native Windows menu toggle)
+
+- Findings: The desktop app always hid the native menu bar, and there was no user-facing control to enable it.
+- Conclusions: Add a secure Electron preload bridge with IPC handlers, then expose a persisted toggle in Settings to control the native menu bar at runtime.
+- Actions: Added native menu creation and IPC handlers in Electron main, added a preload API for menu state changes, added a new Settings toggle backed by `native_windows_menu_enabled`, and validated with lint plus Electron startup on port `5377`.

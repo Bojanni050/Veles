@@ -4,10 +4,32 @@ import { useState, useEffect } from "react"
 import { Box, Button, Heading, HStack, Input, NativeSelect, Stack, Text, VStack } from "@chakra-ui/react"
 import { LuFlaskConical, LuSettings } from "react-icons/lu"
 import { getApiKey, saveApiKey, getSetting, saveSetting, testApiKey } from "@/lib/api"
+import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
 
 const models = ["TemPolor v3", "TemPolor v3.5"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
+const nativeMenuSettingKey = "native_windows_menu_enabled"
+
+type NativeMenuBridge = {
+  isSupported: () => boolean
+  getState: () => Promise<{ enabled: boolean; supported: boolean }>
+  setEnabled: (enabled: boolean) => Promise<{ enabled: boolean }>
+}
+
+type WindowWithNativeMenu = Window & {
+  electronNativeMenu?: NativeMenuBridge
+}
+
+function getNativeMenuBridge(): NativeMenuBridge | null {
+  if (typeof window === "undefined") return null
+  const browserWindow = window as WindowWithNativeMenu
+  return browserWindow.electronNativeMenu ?? null
+}
+
+function parseBooleanSetting(value: string | null): boolean {
+  return value === "true"
+}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Could not reach the API."
@@ -17,6 +39,8 @@ export function SettingsPage() {
   const [apiKey, setApiKey] = useState("")
   const [defaultModel, setDefaultModel] = useState("TemPolor v3.5")
   const [defaultLanguage, setDefaultLanguage] = useState("English")
+  const [nativeMenuEnabled, setNativeMenuEnabled] = useState(false)
+  const [nativeMenuSupported, setNativeMenuSupported] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
 
@@ -28,8 +52,23 @@ export function SettingsPage() {
       if (model) setDefaultModel(model)
       const lang = await getSetting("default_language")
       if (lang) setDefaultLanguage(lang)
+
+      const menuBridge = getNativeMenuBridge()
+      const supportsNativeMenu = menuBridge?.isSupported() ?? false
+      setNativeMenuSupported(supportsNativeMenu)
+
+      const nativeMenuValue = parseBooleanSetting(await getSetting(nativeMenuSettingKey))
+      setNativeMenuEnabled(nativeMenuValue)
+
+      if (supportsNativeMenu && menuBridge) {
+        try {
+          await menuBridge.setEnabled(nativeMenuValue)
+        } catch (error: unknown) {
+          toaster.error({ title: "Desktop integration error", description: getErrorMessage(error) })
+        }
+      }
     }
-    load()
+    void load()
   }, [])
 
   async function handleTestApi() {
@@ -50,9 +89,16 @@ export function SettingsPage() {
       await saveApiKey(apiKey)
       await saveSetting("default_model", defaultModel)
       await saveSetting("default_language", defaultLanguage)
+      await saveSetting(nativeMenuSettingKey, nativeMenuEnabled ? "true" : "false")
+
+      const menuBridge = getNativeMenuBridge()
+      if (nativeMenuSupported && menuBridge) {
+        await menuBridge.setEnabled(nativeMenuEnabled)
+      }
+
       toaster.success({ title: "Settings saved", description: "Your preferences have been updated." })
-    } catch {
-      toaster.error({ title: "Error", description: "Failed to save settings." })
+    } catch (error: unknown) {
+      toaster.error({ title: "Error", description: getErrorMessage(error) })
     } finally {
       setSaving(false)
     }
@@ -130,6 +176,24 @@ export function SettingsPage() {
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              Native Windows Menu
+            </Text>
+            <Switch
+              checked={nativeMenuEnabled}
+              onCheckedChange={(details) => setNativeMenuEnabled(details.checked)}
+              disabled={!nativeMenuSupported}
+            >
+              Enable native menu bar (File, Edit, View, Window)
+            </Switch>
+            <Text fontSize="xs" color="fg.subtle" mt="1">
+              {nativeMenuSupported
+                ? "Applies to the desktop app after you save settings."
+                : "Available only in the Windows desktop app."}
+            </Text>
           </Box>
 
           <HStack gap="3">
