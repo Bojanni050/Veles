@@ -1,8 +1,8 @@
 "use client"
 
-import { Box, Flex, HStack, Text, VStack } from "@chakra-ui/react"
+import { Box, Flex, HStack, Link, Text, VStack } from "@chakra-ui/react"
+import NextLink from "next/link"
 import { LuLibrary, LuMusic, LuSettings, LuWandSparkles } from "react-icons/lu"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ColorModeButton } from "@/components/ui/color-mode"
 
@@ -46,9 +46,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {navItems.map((item) => {
               const isActive = pathname === item.path
               return (
-                <Box
+                <Link
                   key={item.path}
-                  as={Link}
+                  as={NextLink}
                   href={item.path}
                   display="flex"
                   alignItems="center"
@@ -64,10 +64,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition="backgrounds"
                   transitionDuration="fast"
                   justifyContent={{ base: "center", md: "flex-start" }}
+                  textDecoration="none"
+                  _focusVisible={{ boxShadow: "none" }}
                 >
                   <Box as={item.icon} boxSize="5" />
                   <Text display={{ base: "none", md: "block" }}>{item.label}</Text>
-                </Box>
+                </Link>
               )
             })}
           </VStack>

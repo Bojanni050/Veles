@@ -61,6 +61,20 @@ const voices = [
 
 type GenerationStatus = "idle" | "sending" | "generating" | "done" | "failed"
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown error"
+}
+
+function downloadFile(url: string): void {
+  const link = document.createElement("a")
+  link.href = url
+  link.download = ""
+  link.rel = "noopener"
+  document.body.append(link)
+  link.click()
+  link.remove()
+}
+
 export function GeneratorPage() {
   const [title, setTitle] = useState("")
   const [genre, setGenre] = useState("")
@@ -123,8 +137,8 @@ export function GeneratorPage() {
       } else {
         toaster.error({ title: "Failed to generate lyrics", description: "Timed out or error occurred." })
       }
-    } catch (e: any) {
-      toaster.error({ title: "Error", description: e.message })
+    } catch (error: unknown) {
+      toaster.error({ title: "Error", description: getErrorMessage(error) })
     } finally {
       setGeneratingLyrics(false)
     }
@@ -168,9 +182,9 @@ export function GeneratorPage() {
         toaster.error({ title: "Generation failed", description: "Song generation timed out or failed." })
       }
       getBalance().then(setBalance).catch(() => {})
-    } catch (e: any) {
+    } catch (error: unknown) {
       setStatus("failed")
-      toaster.error({ title: "Error", description: e.message })
+      toaster.error({ title: "Error", description: getErrorMessage(error) })
     }
   }
 
@@ -189,8 +203,8 @@ export function GeneratorPage() {
       })
       setSaved(true)
       toaster.success({ title: "Saved to library" })
-    } catch (e: any) {
-      toaster.error({ title: "Error saving", description: e.message })
+    } catch (error: unknown) {
+      toaster.error({ title: "Error saving", description: getErrorMessage(error) })
     }
   }
 
@@ -227,7 +241,6 @@ export function GeneratorPage() {
       </Flex>
 
       <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap="6">
-        {/* Left column - Song settings */}
         <Box
           bg="bg.subtle"
           rounded="xl"
@@ -270,6 +283,7 @@ export function GeneratorPage() {
               </Text>
               <NativeSelect.Root>
                 <NativeSelect.Field
+                  aria-label="Model"
                   value={model}
                   onChange={(e) => setModel(e.currentTarget.value)}
                   bg="bg"
@@ -288,6 +302,7 @@ export function GeneratorPage() {
               </Text>
               <NativeSelect.Root>
                 <NativeSelect.Field
+                  aria-label="Language"
                   value={language}
                   onChange={(e) => setLanguage(e.currentTarget.value)}
                   bg="bg"
@@ -306,6 +321,7 @@ export function GeneratorPage() {
               </Text>
               <NativeSelect.Root>
                 <NativeSelect.Field
+                  aria-label="Voice"
                   value={voiceId}
                   onChange={(e) => setVoiceId(e.currentTarget.value)}
                   bg="bg"
@@ -327,7 +343,6 @@ export function GeneratorPage() {
           </Stack>
         </Box>
 
-        {/* Right column - Lyrics */}
         <Box
           bg="bg.subtle"
           rounded="xl"
@@ -402,7 +417,6 @@ export function GeneratorPage() {
         </Box>
       </Grid>
 
-      {/* Generate button */}
       <Button
         colorPalette="teal"
         size="xl"
@@ -419,7 +433,6 @@ export function GeneratorPage() {
         Generate Song
       </Button>
 
-      {/* Result card */}
       {status === "generating" && (
         <Box
           bg="bg.subtle"
@@ -468,21 +481,13 @@ export function GeneratorPage() {
               </Box>
             </HStack>
 
-            <Box
-              as="audio"
-              controls
-              w="full"
-              rounded="lg"
-              src={resultAudioUrl}
-            />
+            <audio controls src={resultAudioUrl} />
 
             <HStack gap="3">
               <Button
-                as="a"
-                href={resultAudioUrl}
                 variant="outline"
                 size="sm"
-                download
+                onClick={() => downloadFile(resultAudioUrl)}
               >
                 <LuDownload />
                 Download

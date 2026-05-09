@@ -1,5 +1,5 @@
 import { Layout } from "@/components/Layout"
-import { LibraryPage } from "@/pages/LibraryPage"
+import { LibraryPage } from "@/screens/LibraryPage"
 
 export default function LibraryRoutePage() {
   return (

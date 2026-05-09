@@ -7,6 +7,16 @@ import { getSongs, deleteSong, type Song } from "@/lib/api"
 import { toaster } from "@/components/ui/toaster"
 import { AudioPlayer } from "@/components/AudioPlayer"
 
+function downloadFile(url: string): void {
+  const link = document.createElement("a")
+  link.href = url
+  link.download = ""
+  link.rel = "noopener"
+  document.body.append(link)
+  link.click()
+  link.remove()
+}
+
 export function LibraryPage() {
   const [songs, setSongs] = useState<Song[]>([])
   const [loading, setLoading] = useState(true)
@@ -146,26 +156,20 @@ export function LibraryPage() {
                       {song.audio_url ? (
                         <HStack gap="1">
                           <Button
-                            as="a"
-                            href={song.audio_url}
-                            download
                             variant="ghost"
                             size="xs"
                             colorPalette="teal"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); downloadFile(song.audio_url as string) }}
                           >
                             <LuDownload />
                             MP3
                           </Button>
                           {song.audio_hi_url && (
                             <Button
-                              as="a"
-                              href={song.audio_hi_url}
-                              download
                               variant="ghost"
                               size="xs"
                               colorPalette="teal"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => { e.stopPropagation(); downloadFile(song.audio_hi_url as string) }}
                             >
                               <LuDownload />
                               WAV

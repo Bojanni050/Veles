@@ -9,6 +9,10 @@ import { toaster } from "@/components/ui/toaster"
 const models = ["TemPolor v3", "TemPolor v3.5"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Could not reach the API."
+}
+
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState("")
   const [defaultModel, setDefaultModel] = useState("TemPolor v3.5")
@@ -33,8 +37,8 @@ export function SettingsPage() {
     try {
       await testApiKey()
       toaster.success({ title: "Connection successful", description: "Your API key is valid." })
-    } catch (e: any) {
-      toaster.error({ title: "Connection failed", description: e.message || "Could not reach the API." })
+    } catch (error: unknown) {
+      toaster.error({ title: "Connection failed", description: getErrorMessage(error) })
     } finally {
       setTesting(false)
     }
@@ -96,6 +100,7 @@ export function SettingsPage() {
             </Text>
             <NativeSelect.Root size="lg">
               <NativeSelect.Field
+                aria-label="Default model"
                 value={defaultModel}
                 onChange={(e) => setDefaultModel(e.currentTarget.value)}
                 bg="bg"
@@ -114,6 +119,7 @@ export function SettingsPage() {
             </Text>
             <NativeSelect.Root size="lg">
               <NativeSelect.Field
+                aria-label="Default language"
                 value={defaultLanguage}
                 onChange={(e) => setDefaultLanguage(e.currentTarget.value)}
                 bg="bg"

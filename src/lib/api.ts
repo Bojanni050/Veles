@@ -24,6 +24,26 @@ type SongsResponse = {
   data: Song[]
 }
 
+type TempolorResponse<T> = {
+  data: T
+  error?: string
+}
+
+type TempolorSongStatusItem = {
+  status?: string
+  audio_url?: string
+  song_url?: string
+  audio_hi_url?: string
+  lyrics?: string
+}
+
+type TempolorSongQueryData = {
+  songs?: TempolorSongStatusItem[]
+  items?: TempolorSongStatusItem[]
+  status?: string
+  audio_url?: string
+} | TempolorSongStatusItem[]
+
 async function readJson<T>(res: Response): Promise<T> {
   const data = await res.json() as T | { error?: string }
   if (!res.ok) {
@@ -100,7 +120,7 @@ export async function deleteSong(id: number): Promise<void> {
 
 const PROXY_URL = "/api/tempolor-proxy"
 
-async function tempolorFetch(path: string, body: object, method = "POST") {
+async function tempolorFetch<T>(path: string, body: object, method = "POST"): Promise<TempolorResponse<T>> {
   const res = await fetch(PROXY_URL, {
     method: "POST",
     headers: {
@@ -109,28 +129,28 @@ async function tempolorFetch(path: string, body: object, method = "POST") {
     body: JSON.stringify({ path, body, method }),
   })
 
-  return readJson<{ data?: unknown; error?: string }>(res)
+  return readJson<TempolorResponse<T>>(res)
 }
 
 export async function testApiKey(): Promise<void> {
-  await tempolorFetch("/open-apis/v1/account/billing", {})
+  await tempolorFetch<{ balance: number }>("/open-apis/v1/account/billing", {})
 }
 
 export async function getBalance(): Promise<number> {
-  const res = await tempolorFetch("/open-apis/v1/account/billing", {})
-  return res.data.balance as number
+  const res = await tempolorFetch<{ balance: number }>("/open-apis/v1/account/billing", {})
+  return res.data.balance
 }
 
 export async function generateLyrics(prompt: string, model: string) {
-  const res = await tempolorFetch("/open-apis/v1/lyrics/generate", { prompt, model })
-  return res.data.item_ids as string[]
+  const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", { prompt, model })
+  return res.data.item_ids
 }
 
 export async function generateSong(prompt: string, lyrics: string, model: string, voiceId?: string) {
   const body: Record<string, string> = { prompt, lyrics, model }
   if (voiceId) body.voice_id = voiceId
-  const res = await tempolorFetch("/open-apis/v1/song/generate", body)
-  return res.data.item_ids as string[]
+  const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/song/generate", body)
+  return res.data.item_ids
 }
 
 export interface QueryResult {
@@ -141,8 +161,10 @@ export interface QueryResult {
 }
 
 export async function querySongStatus(itemIds: string[]): Promise<QueryResult> {
-  const res = await tempolorFetch("/open-apis/v1/song/query", { item_ids: itemIds })
-  const items = res.data?.songs ?? res.data?.items ?? res.data
+  const res = await tempolorFetch<TempolorSongQueryData>("/open-apis/v1/song/query", { item_ids: itemIds })
+  const items = Array.isArray(res.data)
+    ? res.data
+    : res.data.songs ?? res.data.items ?? []
   if (Array.isArray(items) && items.length > 0) {
     const item = items[0]
     return {
@@ -152,5 +174,8 @@ export async function querySongStatus(itemIds: string[]): Promise<QueryResult> {
       lyrics: item.lyrics,
     }
   }
-  return { status: res.data?.status ?? "pending", audio_url: res.data?.audio_url }
+  if (!Array.isArray(res.data)) {
+    return { status: res.data.status ?? "pending", audio_url: res.data.audio_url }
+  }
+  return { status: "pending" }
 }

@@ -1,5 +1,5 @@
 import { Layout } from "@/components/Layout"
-import { GeneratorPage } from "@/pages/GeneratorPage"
+import { GeneratorPage } from "@/screens/GeneratorPage"
 
 export default function HomePage() {
   return (
