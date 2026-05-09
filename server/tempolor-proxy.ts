@@ -13,7 +13,12 @@ function getApiKey(): string | null {
 }
 
 function isApiRequestLoggingEnabled(): boolean {
-  return getSettingValue("api_request_logging_enabled") === "true"
+  const value = getSettingValue("api_request_logging_enabled")
+  const enabled = value === "true"
+  if (!enabled && value !== null) {
+    console.log(`[Tempolor Proxy] Logging disabled (setting=${value})`)
+  }
+  return enabled
 }
 
 function logProxyRequest(payload: ProxyPayload, method: string): number {
@@ -36,17 +41,21 @@ function logProxyResponse(method: string, path: string, status: number, startedA
 }
 
 export async function handleTempolorProxyPayload(payload: ProxyPayload): Promise<Response> {
+  console.log(`[Tempolor Proxy] Incoming request to ${payload.path}`)
+  
   if (!payload.path || typeof payload.path !== "string") {
     return Response.json({ error: "Missing 'path' in request body" }, { status: 400 })
   }
 
   const apiKey = getApiKey()
   if (!apiKey) {
+    console.log("[Tempolor Proxy] ERROR: API key not configured")
     return Response.json({ error: "API key not configured. Set it in Settings." }, { status: 400 })
   }
 
   const httpMethod = (payload.method || "POST").toUpperCase()
   const shouldLog = isApiRequestLoggingEnabled()
+  console.log(`[Tempolor Proxy] Logging is ${shouldLog ? "ENABLED" : "DISABLED"}`)
   const requestStartedAt = shouldLog ? logProxyRequest(payload, httpMethod) : 0
 
   const fetchOptions: RequestInit = {
@@ -61,8 +70,16 @@ export async function handleTempolorProxyPayload(payload: ProxyPayload): Promise
     fetchOptions.body = JSON.stringify(payload.body || {})
   }
 
-  const upstream = await fetch(`${TEMPOLOR_BASE}${payload.path}`, fetchOptions)
-  const responseText = await upstream.text()
+  let upstream
+  let responseText
+  try {
+    upstream = await fetch(`${TEMPOLOR_BASE}${payload.path}`, fetchOptions)
+    responseText = await upstream.text()
+  } catch (fetchError: unknown) {
+    const message = fetchError instanceof Error ? fetchError.message : "Unknown fetch error"
+    console.error(`[Tempolor Proxy] FETCH ERROR: ${message}`)
+    return Response.json({ error: `Upstream request failed: ${message}` }, { status: 502 })
+  }
 
   if (shouldLog) {
     logProxyResponse(httpMethod, payload.path, upstream.status, requestStartedAt)

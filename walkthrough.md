@@ -87,3 +87,9 @@
 - Findings: A transient IPC failure during settings load could still keep the native menu toggle disabled.
 - Conclusions: Add a fallback that uses bridge platform detection when IPC state lookup fails.
 - Actions: Added try/catch fallback in Settings native-menu support detection (`getState` -> `isSupported`) and validated with lint.
+
+## 2026-05-09 (Tempolor proxy debug logging)
+
+- Findings: Generation errors were not visible in console, making it difficult to diagnose API failures.
+- Conclusions: Add always-on debug output in the proxy layer to show request routing, setting state, and fetch errors.
+- Actions: Added console output for every proxy request, logging enable/disable status, API key presence, and detailed fetch error messages, and validated with lint.
