@@ -39,6 +39,14 @@ const insertSongStatement = db.prepare(`
 `)
 const getSongByIdStatement = db.prepare("SELECT * FROM songs WHERE id = ?")
 const deleteSongStatement = db.prepare("DELETE FROM songs WHERE id = ?")
+const updateSongByItemIdStatement = db.prepare(`
+  UPDATE songs
+  SET
+    status = COALESCE(@status, status),
+    audio_url = COALESCE(@audio_url, audio_url),
+    audio_hi_url = COALESCE(@audio_hi_url, audio_hi_url)
+  WHERE item_ids LIKE @item_id_pattern
+`)
 
 export function getSettingValue(key: string): string | null {
   const row = getSettingStatement.get(key) as { value: string } | undefined
@@ -83,4 +91,17 @@ export function removeSong(id: number): void {
   if (result.changes === 0) {
     throw new Error("Song not found")
   }
+}
+
+export function updateSongByItemId(
+  itemId: string,
+  fields: { status?: string; audio_url?: string | null; audio_hi_url?: string | null },
+): number {
+  const result = updateSongByItemIdStatement.run({
+    status: fields.status ?? null,
+    audio_url: fields.audio_url ?? null,
+    audio_hi_url: fields.audio_hi_url ?? null,
+    item_id_pattern: `%${itemId}%`,
+  })
+  return result.changes
 }

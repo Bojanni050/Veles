@@ -238,6 +238,14 @@ async function runWithMissingItemIdsRetry<T>(operation: () => Promise<T>, retrie
   }
 }
 
+async function getCallbackUrl(path: string): Promise<string> {
+  const base = await getSettingValue("callback_base_url")
+  if (base && base.trim().length > 0) {
+    return `${base.trim().replace(/\/$/, "")}${path}`
+  }
+  return "https://example.com/noop"
+}
+
 export async function testApiKey(): Promise<void> {
   await tempolorFetch<{ balance: number }>("/open-apis/v1/account/billing", {})
 }
@@ -248,11 +256,12 @@ export async function getBalance(): Promise<number> {
 }
 
 export async function generateLyrics(prompt: string, model: string) {
+  const callbackUrl = await getCallbackUrl("/api/lyrics/callback")
   const itemIds = await runWithMissingItemIdsRetry(async () => {
     const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", {
       prompt,
       song_model: model,
-      callback_url: "https://example.com/noop",
+      callback_url: callbackUrl,
     })
     return getItemIdsFromResponse(res.data)
   })
@@ -261,11 +270,12 @@ export async function generateLyrics(prompt: string, model: string) {
 }
 
 export async function generateSong(prompt: string, lyrics: string, model: string, voiceId?: string) {
+  const callbackUrl = await getCallbackUrl("/api/song/callback")
   const body: Record<string, string> = {
     prompt,
     lyrics,
     model,
-    callback_url: "https://example.com/noop",
+    callback_url: callbackUrl,
   }
   if (voiceId) body.voice_id = voiceId
   return runWithMissingItemIdsRetry(async () => {

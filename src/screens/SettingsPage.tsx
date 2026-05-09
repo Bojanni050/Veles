@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Box, Button, Heading, HStack, NativeSelect, Stack, Text, VStack } from "@chakra-ui/react"
+import { Box, Button, Heading, HStack, Input, NativeSelect, Stack, Text, VStack } from "@chakra-ui/react"
 import { LuFlaskConical, LuSettings } from "react-icons/lu"
 import { getApiKey, saveApiKey, getSetting, saveSetting, testApiKey } from "@/lib/api"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -44,6 +44,7 @@ export function SettingsPage() {
   const [nativeMenuEnabled, setNativeMenuEnabled] = useState(false)
   const [nativeMenuSupported, setNativeMenuSupported] = useState(false)
   const [apiRequestLoggingEnabled, setApiRequestLoggingEnabled] = useState(false)
+  const [callbackBaseUrl, setCallbackBaseUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
 
@@ -72,6 +73,9 @@ export function SettingsPage() {
 
       const apiRequestLoggingValue = parseBooleanSetting(await getSetting(apiRequestLoggingSettingKey))
       setApiRequestLoggingEnabled(apiRequestLoggingValue)
+
+      const callbackUrl = await getSetting("callback_base_url")
+      if (callbackUrl) setCallbackBaseUrl(callbackUrl)
 
       if (supportsNativeMenu && menuBridge) {
         try {
@@ -104,6 +108,7 @@ export function SettingsPage() {
       await saveSetting("default_language", defaultLanguage)
       await saveSetting(nativeMenuSettingKey, nativeMenuEnabled ? "true" : "false")
       await saveSetting(apiRequestLoggingSettingKey, apiRequestLoggingEnabled ? "true" : "false")
+      await saveSetting("callback_base_url", callbackBaseUrl.trim())
 
       const menuBridge = getNativeMenuBridge()
       if (nativeMenuSupported && menuBridge) {
@@ -189,6 +194,23 @@ export function SettingsPage() {
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              Callback Base URL
+            </Text>
+            <Input
+              placeholder="https://your-domain.com"
+              value={callbackBaseUrl}
+              onChange={(e) => setCallbackBaseUrl(e.target.value)}
+              bg="bg"
+              size="lg"
+            />
+            <Text fontSize="xs" color="fg.subtle" mt="1">
+              When set, Tempolor will POST song results to {callbackBaseUrl || "https://your-domain.com"}/api/song/callback.
+              Leave empty to use polling only.
+            </Text>
           </Box>
 
           <Box>
