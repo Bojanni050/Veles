@@ -147,3 +147,9 @@
 - Findings: Clicking MP3/WAV download controls could open the browser audio player tab instead of saving the file directly.
 - Conclusions: Use blob-based downloads with explicit filenames to force save behavior, with a link fallback for hosts that reject fetch/CORS.
 - Actions: Added `src/lib/download.ts` with a shared `downloadFile` helper, switched Library MP3/WAV actions in `src/screens/LibraryPage.tsx` to `void downloadFile(...)`, updated the Generator download button in `src/screens/GeneratorPage.tsx` to use the same helper, and validated diagnostics on changed files.
+
+## 2026-05-09 (Tempolor lyrics/status contract alignment)
+
+- Findings: Tempolor integration mismatched docs in three places: lyrics generation sent `model` instead of `song_model`, lyrics generation treated `item_ids` as final lyric text, and body-level `status` codes were not enforced.
+- Conclusions: Align requests and lifecycle with documented endpoints by using `song_model`, polling `/open-apis/v1/lyrics/query` for final `lyric` content, and treating non-`200000` response status as API failures.
+- Actions: Updated `src/lib/api.ts` to parse Tempolor `status`, throw on non-success business codes, send `song_model` in lyrics generation, and add lyrics polling that waits for `succeeded` with text from `lyric`/`lyrics`; validated changed files diagnostics.

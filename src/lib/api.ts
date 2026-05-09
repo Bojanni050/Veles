@@ -25,6 +25,7 @@ type SongsResponse = {
 }
 
 type TempolorResponse<T> = {
+  status?: number
   data?: T
   error?: string
   item_ids?: string[]
@@ -46,6 +47,16 @@ type TempolorSongQueryData = {
   status?: string
   audio_url?: string
 } | TempolorSongStatusItem[]
+
+type TempolorLyricsStatusItem = {
+  status?: string
+  lyric?: string
+  lyrics?: string
+}
+
+type TempolorLyricsQueryData = {
+  lyrics?: TempolorLyricsStatusItem[]
+}
 
 async function readJson<T>(res: Response): Promise<T> {
   const data = await res.json() as T | { error?: string }
@@ -160,6 +171,15 @@ async function tempolorFetch<T>(path: string, body: object, method = "POST"): Pr
     throw new Error("Tempolor returned empty response data.")
   }
 
+  if (!res.ok) {
+    const upstreamError = payload.error || payload.message || `Tempolor request failed with HTTP ${res.status}`
+    throw new Error(upstreamError)
+  }
+
+  if (typeof payload.status === "number" && payload.status !== 200000) {
+    throw new Error(payload.message || `Tempolor error status: ${payload.status}`)
+  }
+
   if (typeof payload.error === "string" && payload.error.trim().length > 0) {
     throw new Error(payload.error)
   }
@@ -228,14 +248,16 @@ export async function getBalance(): Promise<number> {
 }
 
 export async function generateLyrics(prompt: string, model: string) {
-  return runWithMissingItemIdsRetry(async () => {
+  const itemIds = await runWithMissingItemIdsRetry(async () => {
     const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", {
       prompt,
-      model,
+      song_model: model,
       callback_url: "https://example.com/noop",
     })
     return getItemIdsFromResponse(res.data)
   })
+
+  return pollLyricsResult(itemIds)
 }
 
 export async function generateSong(prompt: string, lyrics: string, model: string, voiceId?: string) {
@@ -257,6 +279,30 @@ export interface QueryResult {
   audio_url?: string
   audio_hi_url?: string
   lyrics?: string
+}
+
+async function pollLyricsResult(itemIds: string[], maxAttempts = 60): Promise<string> {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+    const res = await tempolorFetch<TempolorLyricsQueryData>("/open-apis/v1/lyrics/query", { item_ids: itemIds })
+    const item = res.data?.lyrics?.[0]
+
+    if (!item) {
+      continue
+    }
+
+    const status = item.status ?? "pending"
+    if (status === "failed" || status === "error") {
+      throw new Error("Lyrics generation failed.")
+    }
+
+    const lyricText = item.lyric ?? item.lyrics
+    if (status === "succeeded" && lyricText && lyricText.trim().length > 0) {
+      return lyricText
+    }
+  }
+
+  throw new Error("Lyrics generation timed out before text was returned.")
 }
 
 export async function querySongStatus(itemIds: string[]): Promise<QueryResult> {
