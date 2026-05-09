@@ -225,3 +225,9 @@
 - Findings: Suno provider model dropdown had only a single placeholder model and did not match available Suno model variants.
 - Conclusions: Align Suno model options with the current selectable variants shown in the Suno UI.
 - Actions: Updated `src/screens/GeneratorPage.tsx` Suno model list to `V5.5`, `V5`, `V4.5+`, `V4.5`, `V4`, and `V4.5ALL`; validated diagnostics.
+
+## 2026-05-09 (Suno model value mapping fix)
+
+- Findings: Suno generation failed with `model error` because UI labels (e.g., `V5.5`, `V4.5+`) were sent directly instead of API model IDs.
+- Conclusions: Keep user-friendly model labels in the dropdown but send API-compatible model values (`V5_5`, `V4_5PLUS`, etc.) to Suno.
+- Actions: Updated `src/screens/GeneratorPage.tsx` to use label/value model options, map legacy persisted Suno model labels to API values, validate selected model per provider using option values, and render labels while submitting values; validated diagnostics.

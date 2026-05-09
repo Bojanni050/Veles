@@ -37,8 +37,33 @@ import {
 import { downloadFile } from "@/lib/download"
 import { usePersistentState } from "@/lib/use-persistent-state"
 
-const tempolorModels = ["TemPolor v3", "TemPolor v3.5", "TemPolor v4.5"]
-const sunoModels = ["V5.5", "V5", "V4.5+", "V4.5", "V4", "V4.5ALL"]
+type ModelOption = {
+  label: string
+  value: string
+}
+
+const tempolorModels: ModelOption[] = [
+  { label: "TemPolor v3", value: "TemPolor v3" },
+  { label: "TemPolor v3.5", value: "TemPolor v3.5" },
+  { label: "TemPolor v4.5", value: "TemPolor v4.5" },
+]
+
+const sunoModels: ModelOption[] = [
+  { label: "V5.5", value: "V5_5" },
+  { label: "V5", value: "V5" },
+  { label: "V4.5+", value: "V4_5PLUS" },
+  { label: "V4.5", value: "V4_5" },
+  { label: "V4", value: "V4" },
+  { label: "V4.5ALL", value: "V4_5ALL" },
+]
+
+const sunoLegacyModelMap: Record<string, string> = {
+  "V5.5": "V5_5",
+  "V4.5+": "V4_5PLUS",
+  "V4.5": "V4_5",
+  "V4.5ALL": "V4_5ALL",
+  "Suno V4_5ALL": "V4_5ALL",
+}
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 
 type Provider = "tempolor" | "suno"
@@ -136,14 +161,22 @@ export function GeneratorPage() {
 
   useEffect(() => {
     if (provider === "suno") {
-      if (!sunoModels.includes(model)) {
-        setModel(sunoModels[0])
+      const normalized = sunoLegacyModelMap[model]
+      if (normalized) {
+        setModel(normalized)
+        return
+      }
+
+      const hasModel = sunoModels.some((m) => m.value === model)
+      if (!hasModel) {
+        setModel(sunoModels[0].value)
       }
       return
     }
 
-    if (!tempolorModels.includes(model)) {
-      setModel(tempolorModels[0])
+    const hasModel = tempolorModels.some((m) => m.value === model)
+    if (!hasModel) {
+      setModel(tempolorModels[0].value)
     }
   }, [model, provider, setModel])
 
@@ -485,7 +518,7 @@ export function GeneratorPage() {
                   bg="bg"
                 >
                   {availableModels.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
                 </NativeSelect.Field>
                 <NativeSelect.Indicator />
