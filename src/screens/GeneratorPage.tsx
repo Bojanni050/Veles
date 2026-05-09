@@ -146,6 +146,18 @@ export function GeneratorPage() {
   async function handleGenerateLyrics() {
     if (!lyricsPrompt.trim()) return
 
+    setGeneratingLyrics(true)
+    try {
+      const generated = await generateLyrics(lyricsPrompt, model)
+      setLyrics(generated)
+      toaster.success({ title: "Lyrics generated!" })
+    } catch (error: unknown) {
+      toaster.error({ title: "Error generating lyrics", description: getErrorMessage(error) })
+    } finally {
+      setGeneratingLyrics(false)
+    }
+  }
+
   async function handleGenerateSong() {
     if (!genre.trim() || !lyrics.trim()) return
     setStatus("sending")

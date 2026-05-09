@@ -129,3 +129,9 @@
 - Findings: After the progress fix, the generator screen still failed a Chakra accessible-name check on the select controls.
 - Conclusions: Use the repo's existing Chakra `Field` wrapper so the select labels are associated through the component system instead of relying on ad hoc attributes.
 - Actions: Wrapped the generator model, language, and voice selects in `Field` and kept the select options and behavior unchanged.
+
+## 2026-05-09 (Generator lyrics handler syntax fix)
+
+- Findings: The app failed to compile with `Expected '}', got '<eof>'` because `handleGenerateLyrics` in `src/screens/GeneratorPage.tsx` was left incomplete.
+- Conclusions: Restore a complete async lyrics generation handler with explicit loading state transitions and error/success toasts so the component closes correctly and behavior remains consistent.
+- Actions: Implemented and closed `handleGenerateLyrics` in `src/screens/GeneratorPage.tsx` using `generateLyrics`, `setGeneratingLyrics`, `setLyrics`, and toast notifications; validated by re-checking file diagnostics for parser errors.
