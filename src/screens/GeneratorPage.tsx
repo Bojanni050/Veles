@@ -97,6 +97,8 @@ const voices = [
 ]
 
 type GenerationStatus = "idle" | "sending" | "generating" | "done" | "failed"
+const POLL_INTERVAL_MS = 30000
+const MAX_POLL_ATTEMPTS = 20
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown error"
@@ -209,12 +211,12 @@ export function GeneratorPage() {
     }
   }
 
-  const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
+  const pollForResult = useCallback(async (itemIds: string[], maxAttempts = MAX_POLL_ATTEMPTS): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
     const MAX_CONSECUTIVE_FAILURES = 5
     let consecutiveFailures = 0
     for (let i = 0; i < maxAttempts; i++) {
       setPollAttempt(i + 1)
-      await new Promise((r) => setTimeout(r, 3000))
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
       try {
         const result = await querySongStatus(itemIds)
         consecutiveFailures = 0
@@ -240,14 +242,14 @@ export function GeneratorPage() {
     return { audio_url: null, audio_hi_url: null }
   }, [])
 
-  const pollForSunoResult = useCallback(async (taskId: string, maxAttempts = 60): Promise<{
+  const pollForSunoResult = useCallback(async (taskId: string, maxAttempts = MAX_POLL_ATTEMPTS): Promise<{
     status: string
     audioUrl?: string
     sunoData?: SunoStatusSunoItem[]
   }> => {
     for (let i = 0; i < maxAttempts; i++) {
       setPollAttempt(i + 1)
-      await new Promise((r) => setTimeout(r, 3000))
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
       const result = await querySunoStatus(taskId)
       if (result.status === "completed") {
         return result
@@ -689,12 +691,12 @@ export function GeneratorPage() {
                   Generating your song... This may take a few minutes.
                 </Text>
                 <Text fontSize="sm" color="fg.subtle">
-                  Attempt {pollAttempt} of 60
+                  Attempt {pollAttempt} of {MAX_POLL_ATTEMPTS}
                 </Text>
               </Box>
             </Flex>
             <Progress.Root
-              value={(pollAttempt / 60) * 100}
+              value={(pollAttempt / MAX_POLL_ATTEMPTS) * 100}
               striped
               animated
               colorPalette="teal"

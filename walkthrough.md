@@ -231,3 +231,9 @@
 - Findings: Suno generation failed with `model error` because UI labels (e.g., `V5.5`, `V4.5+`) were sent directly instead of API model IDs.
 - Conclusions: Keep user-friendly model labels in the dropdown but send API-compatible model values (`V5_5`, `V4_5PLUS`, etc.) to Suno.
 - Actions: Updated `src/screens/GeneratorPage.tsx` to use label/value model options, map legacy persisted Suno model labels to API values, validate selected model per provider using option values, and render labels while submitting values; validated diagnostics.
+
+## 2026-05-09 (Polling cadence reduction)
+
+- Findings: Generation polling was still running every 3 seconds with a 60-attempt cap, which exceeded the desired 10-minute window.
+- Conclusions: Standardize polling to once every 30 seconds with a maximum of 20 attempts so the UI and lyric polling both stop within 10 minutes.
+- Actions: Updated `src/screens/GeneratorPage.tsx` and `src/lib/api.ts` to use a 30-second poll interval and 20-attempt limit, including the visible attempt counter and progress bar on the generator page; validated diagnostics.

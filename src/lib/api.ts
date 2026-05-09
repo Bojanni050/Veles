@@ -140,6 +140,8 @@ export async function deleteSong(id: number): Promise<void> {
 
 const PROXY_URL = "/api/tempolor-proxy"
 const SUNO_PROXY_URL = "/api/suno-proxy"
+const POLL_INTERVAL_MS = 30000
+const MAX_POLL_ATTEMPTS = 20
 
 type SunoEnvelope<T> = {
   code?: number
@@ -354,9 +356,9 @@ export interface QueryResult {
   lyrics?: string
 }
 
-async function pollLyricsResult(itemIds: string[], maxAttempts = 60): Promise<string> {
+async function pollLyricsResult(itemIds: string[], maxAttempts = MAX_POLL_ATTEMPTS): Promise<string> {
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
     const res = await tempolorFetch<TempolorLyricsQueryData>("/open-apis/v1/lyrics/query", { item_ids: itemIds })
     const item = res.data?.lyrics?.[0]
 
