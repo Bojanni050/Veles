@@ -45,3 +45,9 @@
 - Findings: The desktop app always hid the native menu bar, and there was no user-facing control to enable it.
 - Conclusions: Add a secure Electron preload bridge with IPC handlers, then expose a persisted toggle in Settings to control the native menu bar at runtime.
 - Actions: Added native menu creation and IPC handlers in Electron main, added a preload API for menu state changes, added a new Settings toggle backed by `native_windows_menu_enabled`, and validated with lint plus Electron startup on port `5377`.
+
+## 2026-05-09 (Tempolor null response guard)
+
+- Findings: Song generation could crash with `Cannot read properties of null (reading 'item_ids')` when the proxy returned a success response containing empty or null `data`.
+- Conclusions: Validate Tempolor payloads centrally and require non-empty `item_ids` before continuing generation flows.
+- Actions: Hardened Tempolor client response parsing, surfaced upstream `error` fields, added explicit null guards and `item_ids` validation, and validated with lint.

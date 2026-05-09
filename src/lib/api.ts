@@ -129,7 +129,25 @@ async function tempolorFetch<T>(path: string, body: object, method = "POST"): Pr
     body: JSON.stringify({ path, body, method }),
   })
 
-  return readJson<TempolorResponse<T>>(res)
+  const payload = await readJson<TempolorResponse<T>>(res)
+
+  if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+    throw new Error(payload.error)
+  }
+
+  if (payload.data === null || payload.data === undefined) {
+    throw new Error("Tempolor returned empty response data.")
+  }
+
+  return payload
+}
+
+function getItemIdsFromResponse(data: { item_ids?: string[] } | null | undefined): string[] {
+  if (!data || !Array.isArray(data.item_ids) || data.item_ids.length === 0) {
+    throw new Error("Tempolor did not return any item IDs.")
+  }
+
+  return data.item_ids
 }
 
 export async function testApiKey(): Promise<void> {
@@ -143,14 +161,14 @@ export async function getBalance(): Promise<number> {
 
 export async function generateLyrics(prompt: string, model: string) {
   const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", { prompt, model })
-  return res.data.item_ids
+  return getItemIdsFromResponse(res.data)
 }
 
 export async function generateSong(prompt: string, lyrics: string, model: string, voiceId?: string) {
   const body: Record<string, string> = { prompt, lyrics, model }
   if (voiceId) body.voice_id = voiceId
   const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/song/generate", body)
-  return res.data.item_ids
+  return getItemIdsFromResponse(res.data)
 }
 
 export interface QueryResult {
@@ -162,6 +180,9 @@ export interface QueryResult {
 
 export async function querySongStatus(itemIds: string[]): Promise<QueryResult> {
   const res = await tempolorFetch<TempolorSongQueryData>("/open-apis/v1/song/query", { item_ids: itemIds })
+  if (res.data === null || res.data === undefined) {
+    return { status: "pending" }
+  }
   const items = Array.isArray(res.data)
     ? res.data
     : res.data.songs ?? res.data.items ?? []
