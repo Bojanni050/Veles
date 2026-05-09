@@ -189,3 +189,9 @@
 - Findings: The generator lacked a full Suno completion branch that persisted both songs returned in `sunoData`, and UI actions did not reflect auto-saved Suno results.
 - Conclusions: Add a Suno-specific polling/success path that stores both generated tracks in the library, sets the first audio for inline playback, and marks the result as already saved.
 - Actions: Updated `src/lib/api.ts` to include `sunoData` in `querySunoStatus` results and updated `src/screens/GeneratorPage.tsx` to route Suno models through `generateSunoSong` + `querySunoStatus`, save two songs (`(1)` and `(2)`) with Suno fields, set first `audioUrl` as result playback URL, show toast "2 songs saved to library", call `setSaved(true)`, and hide the Save button once saved; validated diagnostics.
+
+## 2026-05-09 (Settings button placement update)
+
+- Findings: Tempolor save/test actions were positioned at the bottom of the settings form instead of next to the Tempolor key input.
+- Conclusions: Move the Tempolor action row directly under the Tempolor API key field to keep key actions contextual and easier to find.
+- Actions: Updated `src/screens/SettingsPage.tsx` by relocating the existing Tempolor Save/Test button row under the Tempolor API key helper text and removing the bottom duplicate row; validated diagnostics.

@@ -197,6 +197,26 @@ export function SettingsPage() {
             <Text fontSize="xs" color="fg.subtle" mt="1">
               Get your key from the Tempolor dashboard
             </Text>
+            <HStack gap="3" mt="3">
+              <Button
+                colorPalette="teal"
+                size="lg"
+                onClick={handleSave}
+                loading={saving}
+              >
+                <LuSettings />
+                Save Settings
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleTestApi}
+                loading={testing}
+              >
+                <LuFlaskConical />
+                Test API Key
+              </Button>
+            </HStack>
           </Box>
 
           <Box>
@@ -323,26 +343,6 @@ export function SettingsPage() {
             </Text>
           </Box>
 
-          <HStack gap="3">
-            <Button
-              colorPalette="teal"
-              size="lg"
-              onClick={handleSave}
-              loading={saving}
-            >
-              <LuSettings />
-              Save Settings
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleTestApi}
-              loading={testing}
-            >
-              <LuFlaskConical />
-              Test API Key
-            </Button>
-          </HStack>
         </Stack>
       </Box>
     </VStack>
