@@ -93,3 +93,15 @@
 - Findings: Generation errors were not visible in console, making it difficult to diagnose API failures.
 - Conclusions: Add always-on debug output in the proxy layer to show request routing, setting state, and fetch errors.
 - Actions: Added console output for every proxy request, logging enable/disable status, API key presence, and detailed fetch error messages, and validated with lint.
+
+## 2026-05-09 (parseItemIds utility function)
+
+- Findings: The `item_ids` field is stored as a JSON string in the database but has no safe parser; accessing song.item_ids directly requires manual JSON parsing.
+- Conclusions: Add a defensive utility function that safely parses item_ids and returns an empty array if the raw value is null, empty, or invalid JSON.
+- Actions: Exported `parseItemIds(raw: string | null): string[]` from [src/lib/api.ts](src/lib/api.ts); function safely handles all error cases. No current usages in codebase, but function is ready for resume-generation or status-query features, and validated with lint.
+
+## 2026-05-09 (Polling progress feedback)
+
+- Findings: Song generation polls up to 60 times with 3-second intervals (3 minutes total), but users see no progress indication and don't know how long to wait.
+- Conclusions: Track poll attempt count in state and display both a progress bar and attempt counter (e.g., "Attempt 12 of 60") during generation to provide real-time feedback.
+- Actions: Added `pollAttempt` state to [src/screens/GeneratorPage.tsx](src/screens/GeneratorPage.tsx); imported `Progress` component from Chakra UI; updated `pollForResult` to increment attempt on each iteration; reset attempt counter at start and end of `handleGenerateSong`; replaced skeleton loader with animated striped progress bar and attempt text; validated with lint.

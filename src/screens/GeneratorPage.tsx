@@ -10,6 +10,7 @@ import {
   HStack,
   Input,
   NativeSelect,
+  Progress,
   Skeleton,
   Stack,
   Text,
@@ -92,6 +93,7 @@ export function GeneratorPage() {
   const [resultAudioHiUrl, setResultAudioHiUrl] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)
+  const [pollAttempt, setPollAttempt] = useState(0)
 
   useEffect(() => {
     async function loadDefaults() {
@@ -111,6 +113,7 @@ export function GeneratorPage() {
 
   const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
     for (let i = 0; i < maxAttempts; i++) {
+      setPollAttempt(i + 1)
       await new Promise((r) => setTimeout(r, 3000))
       try {
         const result = await querySongStatus(itemIds)
@@ -170,6 +173,7 @@ export function GeneratorPage() {
     setResultAudioUrl(null)
     setResultAudioHiUrl(null)
     setSaved(false)
+    setPollAttempt(0)
     try {
       const prompt = `${genre}${language !== "English" ? `, language: ${language}` : ""}`
       const itemIds = await generateSong(prompt, lyrics, model, voiceId || undefined)
@@ -179,9 +183,11 @@ export function GeneratorPage() {
         setResultAudioUrl(audio_url)
         setResultAudioHiUrl(audio_hi_url)
         setStatus("done")
+        setPollAttempt(0)
         toaster.success({ title: "Song generated!" })
       } else {
         setStatus("failed")
+        setPollAttempt(0)
         const timeoutMessage = "Song generation timed out before audio was returned."
         setGenerationError(timeoutMessage)
         toaster.error({ title: "Generation failed", description: timeoutMessage })
@@ -189,6 +195,7 @@ export function GeneratorPage() {
       getBalance().then(setBalance).catch(() => {})
     } catch (error: unknown) {
       setStatus("failed")
+      setPollAttempt(0)
       const message = getErrorMessage(error)
       setGenerationError(message)
       toaster.error({ title: "Error", description: message })
@@ -449,19 +456,32 @@ export function GeneratorPage() {
           borderWidth="1px"
           borderColor="border.muted"
         >
-          <Stack gap="4" align="center">
-            <Box
-              animation="pulse 2s ease-in-out infinite"
-              p="4"
-              rounded="full"
-              bg="teal.500/10"
-            >
-              <Box as={LuMusic} boxSize="8" color="teal.400" />
-            </Box>
-            <Text color="fg.muted" fontWeight="medium">
-              Generating your song... This may take a few minutes.
-            </Text>
-            <Skeleton height="3" width="60%" />
+          <Stack gap="4">
+            <Flex align="center" gap="3" justify="center">
+              <Box
+                animation="pulse 2s ease-in-out infinite"
+                p="3"
+                rounded="full"
+                bg="teal.500/10"
+              >
+                <Box as={LuMusic} boxSize="6" color="teal.400" />
+              </Box>
+              <Box>
+                <Text color="fg.muted" fontWeight="medium">
+                  Generating your song... This may take a few minutes.
+                </Text>
+                <Text fontSize="sm" color="fg.subtle">
+                  Attempt {pollAttempt} of 60
+                </Text>
+              </Box>
+            </Flex>
+            <Progress
+              value={(pollAttempt / 60) * 100}
+              striped
+              animated
+              colorPalette="teal"
+              size="sm"
+            />
           </Stack>
         </Box>
       )}

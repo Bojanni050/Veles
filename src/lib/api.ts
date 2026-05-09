@@ -150,6 +150,22 @@ function getItemIdsFromResponse(data: { item_ids?: string[] } | null | undefined
   return data.item_ids
 }
 
+export function parseItemIds(raw: string | null): string[] {
+  if (!raw) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+    return parsed
+  } catch {
+    return []
+  }
+}
+
 function shouldRetryMissingItemIds(error: unknown): boolean {
   return error instanceof Error && error.message === "Tempolor did not return any item IDs."
 }
