@@ -79,5 +79,8 @@ export function getSongById(id: number): SongRecord {
 }
 
 export function removeSong(id: number): void {
-  deleteSongStatement.run(id)
+  const result = deleteSongStatement.run(id)
+  if (result.changes === 0) {
+    throw new Error("Song not found")
+  }
 }

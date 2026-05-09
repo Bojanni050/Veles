@@ -13,6 +13,13 @@ export async function DELETE(_: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid song id" }, { status: 400 })
   }
 
-  removeSong(numericId)
+  try {
+    removeSong(numericId)
+  } catch (err) {
+    if (err instanceof Error && err.message === "Song not found") {
+      return NextResponse.json({ error: "Song not found" }, { status: 404 })
+    }
+    throw err
+  }
   return new Response(null, { status: 204 })
 }
