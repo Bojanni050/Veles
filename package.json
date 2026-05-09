@@ -17,6 +17,7 @@
   "dependencies": {
     "@chakra-ui/react": "^3.34.0",
     "@emotion/react": "^11.14.0",
+    "@google/genai": "^2.0.1",
     "better-sqlite3": "^12.6.2",
     "next": "^16.1.6",
     "next-themes": "^0.4.6",
@@ -59,7 +60,9 @@
       {
         "from": "data",
         "to": "data",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {

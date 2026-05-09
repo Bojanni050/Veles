@@ -467,6 +467,14 @@ export async function saveSunoApiKey(key: string): Promise<void> {
   await saveSetting("suno_api_key", key)
 }
 
+export async function getGeminiApiKey(): Promise<string | null> {
+  return getSetting("gemini_api_key")
+}
+
+export async function saveGeminiApiKey(key: string): Promise<void> {
+  await saveSetting("gemini_api_key", key)
+}
+
 export async function getSunoBalance(): Promise<number> {
   let data: SunoBalanceResponseData | number
   try {

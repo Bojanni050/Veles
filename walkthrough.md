@@ -237,3 +237,9 @@
 - Findings: Generation polling was still running every 3 seconds with a 60-attempt cap, which exceeded the desired 10-minute window.
 - Conclusions: Standardize polling to once every 30 seconds with a maximum of 20 attempts so the UI and lyric polling both stop within 10 minutes.
 - Actions: Updated `src/screens/GeneratorPage.tsx` and `src/lib/api.ts` to use a 30-second poll interval and 20-attempt limit, including the visible attempt counter and progress bar on the generator page; validated diagnostics.
+
+## 2026-05-09 (Lyria proxy and Gemini key settings)
+
+- Findings: The app lacked a proxy endpoint for Google Lyria 3 audio generation and had no dedicated Gemini key entry in the settings UI.
+- Conclusions: Add a Node runtime proxy route for Lyria generation using `@google/genai`, including optional request logging, and add save/load helpers plus UI controls for `gemini_api_key`.
+- Actions: Added `app/api/lyria-proxy/route.ts` to accept `{ prompt, lyrics?, model }`, enforce `process.env.GEMINI_API_KEY`, call `GoogleGenAI` `generateContent` with `lyria-3-pro-preview`/`lyria-3-clip-preview`, extract base64 audio from `candidates[].content.parts[].inlineData`, and return downloadable WAV bytes; added `getGeminiApiKey`/`saveGeminiApiKey` in `src/lib/api.ts`; added Gemini key load/save section in `src/screens/SettingsPage.tsx`; validated diagnostics.

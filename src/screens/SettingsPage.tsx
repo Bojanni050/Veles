@@ -12,6 +12,8 @@ import {
   getSunoApiKey,
   saveSunoApiKey,
   getSunoBalance,
+  getGeminiApiKey,
+  saveGeminiApiKey,
 } from "@/lib/api"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Switch } from "@/components/ui/switch"
@@ -49,6 +51,7 @@ function getErrorMessage(error: unknown): string {
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState("")
   const [sunoApiKey, setSunoApiKey] = useState("")
+  const [geminiApiKey, setGeminiApiKey] = useState("")
   const [defaultModel, setDefaultModel] = useState("TemPolor v3.5")
   const [defaultLanguage, setDefaultLanguage] = useState("English")
   const [nativeMenuEnabled, setNativeMenuEnabled] = useState(false)
@@ -59,6 +62,7 @@ export function SettingsPage() {
   const [testing, setTesting] = useState(false)
   const [sunoSaving, setSunoSaving] = useState(false)
   const [sunoTesting, setSunoTesting] = useState(false)
+  const [geminiSaving, setGeminiSaving] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -66,6 +70,8 @@ export function SettingsPage() {
       if (key) setApiKey(key)
       const sunoKey = await getSunoApiKey()
       if (sunoKey) setSunoApiKey(sunoKey)
+      const geminiKey = await getGeminiApiKey()
+      if (geminiKey) setGeminiApiKey(geminiKey)
       const model = await getSetting("default_model")
       if (model) setDefaultModel(model)
       const lang = await getSetting("default_language")
@@ -143,6 +149,18 @@ export function SettingsPage() {
       toaster.error({ title: "Suno connection failed", description: getErrorMessage(error) })
     } finally {
       setSunoTesting(false)
+    }
+  }
+
+  async function handleSaveGeminiApi() {
+    setGeminiSaving(true)
+    try {
+      await saveGeminiApiKey(geminiApiKey.trim())
+      toaster.success({ title: "Gemini API key saved", description: "Your Gemini key has been updated." })
+    } catch (error: unknown) {
+      toaster.error({ title: "Error", description: getErrorMessage(error) })
+    } finally {
+      setGeminiSaving(false)
     }
   }
 
@@ -256,6 +274,33 @@ export function SettingsPage() {
               >
                 <LuFlaskConical />
                 Test Suno Key
+              </Button>
+            </HStack>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              Gemini API Key
+            </Text>
+            <PasswordInput
+              placeholder="Enter your Gemini API key"
+              value={geminiApiKey}
+              onChange={(e) => setGeminiApiKey(e.target.value)}
+              bg="bg"
+              size="lg"
+            />
+            <Text fontSize="xs" color="fg.subtle" mt="1">
+              Stored under settings key: gemini_api_key
+            </Text>
+            <HStack gap="3" mt="3">
+              <Button
+                colorPalette="teal"
+                size="sm"
+                onClick={handleSaveGeminiApi}
+                loading={geminiSaving}
+              >
+                <LuSettings />
+                Save Gemini Key
               </Button>
             </HStack>
           </Box>
