@@ -113,8 +113,14 @@ export async function deleteSong(id: number): Promise<void> {
   })
 
   if (!res.ok) {
-    const data = await res.json() as { error?: string }
-    throw new Error(data.error || `API error: ${res.status}`)
+    let message = `API error: ${res.status}`
+    try {
+      const data = await res.json() as { error?: string }
+      if (data.error) message = data.error
+    } catch {
+      // response body is empty or not valid JSON — fall through with status message
+    }
+    throw new Error(message)
   }
 }
 

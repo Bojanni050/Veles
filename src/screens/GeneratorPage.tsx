@@ -112,19 +112,31 @@ export function GeneratorPage() {
   }, [setLanguage, setModel])
 
   const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
+    const MAX_CONSECUTIVE_FAILURES = 5
+    let consecutiveFailures = 0
     for (let i = 0; i < maxAttempts; i++) {
       setPollAttempt(i + 1)
       await new Promise((r) => setTimeout(r, 3000))
       try {
         const result = await querySongStatus(itemIds)
+        consecutiveFailures = 0
         if (result.status === "succeeded" || result.status === "completed" || result.status === "complete" || result.audio_url) {
           return { audio_url: result.audio_url ?? null, audio_hi_url: result.audio_hi_url ?? null }
         }
         if (result.status === "failed" || result.status === "error") {
           return { audio_url: null, audio_hi_url: null }
         }
-      } catch {
-        // continue polling
+      } catch (err) {
+        consecutiveFailures++
+        if (process.env.NODE_ENV === "development") {
+          console.error(`[pollForResult] fetch error (attempt ${i + 1}, consecutive: ${consecutiveFailures}):`, err)
+        }
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[pollForResult] stopping early after", MAX_CONSECUTIVE_FAILURES, "consecutive failures")
+          }
+          return { audio_url: null, audio_hi_url: null }
+        }
       }
     }
     return { audio_url: null, audio_hi_url: null }
@@ -150,17 +162,29 @@ export function GeneratorPage() {
   }
 
   async function pollForLyrics(itemIds: string[]): Promise<string | null> {
+    const MAX_CONSECUTIVE_FAILURES = 5
+    let consecutiveFailures = 0
     for (let i = 0; i < 60; i++) {
       await new Promise((r) => setTimeout(r, 3000))
       try {
         const result = await querySongStatus(itemIds)
+        consecutiveFailures = 0
         if (result.lyrics) return result.lyrics
         if (result.status === "completed" || result.status === "complete") {
           return result.lyrics ?? null
         }
         if (result.status === "failed" || result.status === "error") return null
-      } catch {
-        // continue
+      } catch (err) {
+        consecutiveFailures++
+        if (process.env.NODE_ENV === "development") {
+          console.error(`[pollForLyrics] fetch error (attempt ${i + 1}, consecutive: ${consecutiveFailures}):`, err)
+        }
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[pollForLyrics] stopping early after", MAX_CONSECUTIVE_FAILURES, "consecutive failures")
+          }
+          return null
+        }
       }
     }
     return null

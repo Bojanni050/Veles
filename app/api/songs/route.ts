@@ -18,8 +18,20 @@ export async function POST(request: Request) {
     audio_hi_url: string | null
   }>
 
-  if (!payload.genre || !payload.lyrics) {
-    return NextResponse.json({ error: "Missing required song fields" }, { status: 400 })
+  const stringFields: Array<keyof typeof payload> = ["title", "genre", "lyrics", "model", "language"]
+  for (const field of stringFields) {
+    const value = payload[field]
+    if (value !== undefined && typeof value !== "string") {
+      return NextResponse.json({ error: `Field '${field}' must be a string` }, { status: 400 })
+    }
+  }
+
+  if (!payload.genre || payload.genre.trim() === "") {
+    return NextResponse.json({ error: "Field 'genre' is required and must not be empty" }, { status: 400 })
+  }
+
+  if (!payload.lyrics || payload.lyrics.trim() === "") {
+    return NextResponse.json({ error: "Field 'lyrics' is required and must not be empty" }, { status: 400 })
   }
 
   const song = saveSong({
