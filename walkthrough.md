@@ -117,3 +117,9 @@
 - Findings: Tempolor song generation requires a `callback_url` field even though Veles does not consume callbacks directly.
 - Conclusions: Include a no-op callback URL in the request body so generation requests satisfy the upstream contract without changing local behavior.
 - Actions: Added `callback_url: "https://example.com/noop"` to the `generateSong` request body in `src/lib/api.ts` and kept the retry/status flow unchanged.
+
+## 2026-05-09 (Chakra progress runtime fix)
+
+- Findings: The generator page crashed at render time because Chakra UI 3 uses the compound `Progress.Root` API rather than a direct `Progress` component.
+- Conclusions: Keep the same progress semantics but render the v3 compound structure so the page can mount normally.
+- Actions: Replaced the direct `<Progress>` usage in `src/screens/GeneratorPage.tsx` with `Progress.Root`/`Progress.Track`/`Progress.Range` and preserved the existing value, striped, and animated behavior.

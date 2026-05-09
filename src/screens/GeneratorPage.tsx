@@ -323,6 +323,7 @@ export function GeneratorPage() {
               <NativeSelect.Root>
                 <NativeSelect.Field
                   aria-label="Model"
+                    title="Model"
                   value={model}
                   onChange={(e) => setModel(e.currentTarget.value)}
                   bg="bg"
@@ -342,6 +343,7 @@ export function GeneratorPage() {
               <NativeSelect.Root>
                 <NativeSelect.Field
                   aria-label="Language"
+                    title="Language"
                   value={language}
                   onChange={(e) => setLanguage(e.currentTarget.value)}
                   bg="bg"
@@ -361,6 +363,7 @@ export function GeneratorPage() {
               <NativeSelect.Root>
                 <NativeSelect.Field
                   aria-label="Voice"
+                    title="Voice"
                   value={voiceId}
                   onChange={(e) => setVoiceId(e.currentTarget.value)}
                   bg="bg"
@@ -499,13 +502,17 @@ export function GeneratorPage() {
                 </Text>
               </Box>
             </Flex>
-            <Progress
+            <Progress.Root
               value={(pollAttempt / 60) * 100}
               striped
               animated
               colorPalette="teal"
               size="sm"
-            />
+            >
+              <Progress.Track>
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
           </Stack>
         </Box>
       )}
