@@ -51,3 +51,9 @@
 - Findings: Song generation could crash with `Cannot read properties of null (reading 'item_ids')` when the proxy returned a success response containing empty or null `data`.
 - Conclusions: Validate Tempolor payloads centrally and require non-empty `item_ids` before continuing generation flows.
 - Actions: Hardened Tempolor client response parsing, surfaced upstream `error` fields, added explicit null guards and `item_ids` validation, and validated with lint.
+
+## 2026-05-09 (One-shot retry for missing item IDs)
+
+- Findings: Some generation requests returned transient responses without `item_ids` even though a retry can succeed shortly after.
+- Conclusions: Keep strict validation but allow one automatic retry only for the specific missing-item-IDs condition.
+- Actions: Added a focused one-shot retry wrapper for lyrics/song generation calls when `item_ids` are missing, preserved immediate failure for all other errors, and validated with lint.

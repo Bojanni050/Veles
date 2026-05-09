@@ -150,6 +150,21 @@ function getItemIdsFromResponse(data: { item_ids?: string[] } | null | undefined
   return data.item_ids
 }
 
+function shouldRetryMissingItemIds(error: unknown): boolean {
+  return error instanceof Error && error.message === "Tempolor did not return any item IDs."
+}
+
+async function runWithMissingItemIdsRetry<T>(operation: () => Promise<T>, retries = 1): Promise<T> {
+  try {
+    return await operation()
+  } catch (error: unknown) {
+    if (retries > 0 && shouldRetryMissingItemIds(error)) {
+      return runWithMissingItemIdsRetry(operation, retries - 1)
+    }
+    throw error
+  }
+}
+
 export async function testApiKey(): Promise<void> {
   await tempolorFetch<{ balance: number }>("/open-apis/v1/account/billing", {})
 }
@@ -160,15 +175,19 @@ export async function getBalance(): Promise<number> {
 }
 
 export async function generateLyrics(prompt: string, model: string) {
-  const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", { prompt, model })
-  return getItemIdsFromResponse(res.data)
+  return runWithMissingItemIdsRetry(async () => {
+    const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/lyrics/generate", { prompt, model })
+    return getItemIdsFromResponse(res.data)
+  })
 }
 
 export async function generateSong(prompt: string, lyrics: string, model: string, voiceId?: string) {
   const body: Record<string, string> = { prompt, lyrics, model }
   if (voiceId) body.voice_id = voiceId
-  const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/song/generate", body)
-  return getItemIdsFromResponse(res.data)
+  return runWithMissingItemIdsRetry(async () => {
+    const res = await tempolorFetch<{ item_ids: string[] }>("/open-apis/v1/song/generate", body)
+    return getItemIdsFromResponse(res.data)
+  })
 }
 
 export interface QueryResult {
