@@ -23,6 +23,8 @@ import { LuCoins, LuDownload, LuLibrary, LuMusic, LuPause, LuPlay, LuSparkles, L
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
 import {
+  generateLyriaClip,
+  generateLyriaSong,
   generateLyrics,
   generateSong,
   generateSunoSong,
@@ -57,6 +59,11 @@ const sunoModels: ModelOption[] = [
   { label: "V4.5ALL", value: "V4_5ALL" },
 ]
 
+const lyriaModels: ModelOption[] = [
+  { label: "Full Song (Pro)", value: "pro" },
+  { label: "30s Clip", value: "clip" },
+]
+
 const sunoLegacyModelMap: Record<string, string> = {
   "V5.5": "V5_5",
   "V4.5+": "V4_5PLUS",
@@ -66,7 +73,7 @@ const sunoLegacyModelMap: Record<string, string> = {
 }
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 
-type Provider = "tempolor" | "suno"
+type Provider = "tempolor" | "suno" | "lyria"
 
 const voices = [
   { id: "", name: "Auto (Default)", description: "Let the AI choose the best voice" },
@@ -136,9 +143,15 @@ export function GeneratorPage() {
   const [inlineDuration, setInlineDuration] = useState(0)
   const [inlineVolume, setInlineVolume] = useState(80)
   const [inlineMuted, setInlineMuted] = useState(false)
+  const [lyriaBlob, setLyriaBlob] = useState<Blob | null>(null)
+  const lyriaObjectUrlRef = useRef<string | null>(null)
 
   const inlineAudioSrc = resultAudioHiUrl ?? resultAudioUrl
-  const availableModels = provider === "suno" ? sunoModels : tempolorModels
+  const availableModels = provider === "suno"
+    ? sunoModels
+    : provider === "lyria"
+      ? lyriaModels
+      : tempolorModels
 
   const formatTempolorCredits = useCallback((value: number): string => {
     const normalized = value < 100 ? Math.round(value * 100) : Math.round(value)
@@ -162,6 +175,14 @@ export function GeneratorPage() {
   }, [refreshProviderCredits, setLanguage, setModel])
 
   useEffect(() => {
+    return () => {
+      if (lyriaObjectUrlRef.current) {
+        URL.revokeObjectURL(lyriaObjectUrlRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (provider === "suno") {
       const normalized = sunoLegacyModelMap[model]
       if (normalized) {
@@ -172,6 +193,14 @@ export function GeneratorPage() {
       const hasModel = sunoModels.some((m) => m.value === model)
       if (!hasModel) {
         setModel(sunoModels[0].value)
+      }
+      return
+    }
+
+    if (provider === "lyria") {
+      const hasModel = lyriaModels.some((m) => m.value === model)
+      if (!hasModel) {
+        setModel(lyriaModels[0].value)
       }
       return
     }
@@ -264,9 +293,9 @@ export function GeneratorPage() {
   async function handleGenerateLyrics() {
     if (!lyricsPrompt.trim()) return
 
-    if (provider === "suno") {
+    if (provider !== "tempolor") {
       toaster.error({
-        title: "Not available for Suno",
+        title: "Not available",
         description: "Use Tempolor provider for auto lyric generation.",
       })
       return
@@ -286,13 +315,40 @@ export function GeneratorPage() {
 
   async function handleGenerateSong() {
     if (!genre.trim() || !lyrics.trim()) return
+
+    if (lyriaObjectUrlRef.current) {
+      URL.revokeObjectURL(lyriaObjectUrlRef.current)
+      lyriaObjectUrlRef.current = null
+    }
+
     setStatus("sending")
     setGenerationError(null)
     setResultAudioUrl(null)
     setResultAudioHiUrl(null)
     setSaved(false)
     setPollAttempt(0)
+    setLyriaBlob(null)
     try {
+      if (provider === "lyria") {
+        const prompt = `${genre}${language !== "English" ? `, sung in ${language}` : ""}`
+        setStatus("generating")
+
+        const blob = model === "clip"
+          ? await generateLyriaClip(prompt, lyrics)
+          : await generateLyriaSong(prompt, lyrics)
+
+        const audioUrl = URL.createObjectURL(blob)
+        lyriaObjectUrlRef.current = audioUrl
+
+        setLyriaBlob(blob)
+        setResultAudioUrl(audioUrl)
+        setResultAudioHiUrl(null)
+        setStatus("done")
+        setPollAttempt(0)
+        toaster.success({ title: "Song generated with Lyria 3!" })
+        return
+      }
+
       const isSunoModel = provider === "suno"
 
       if (isSunoModel) {
@@ -379,6 +435,34 @@ export function GeneratorPage() {
 
   async function handleSaveToLibrary() {
     try {
+      if (provider === "lyria" && lyriaBlob) {
+        const temporaryObjectUrl = URL.createObjectURL(lyriaBlob)
+
+        if (lyriaObjectUrlRef.current) {
+          URL.revokeObjectURL(lyriaObjectUrlRef.current)
+        }
+        lyriaObjectUrlRef.current = temporaryObjectUrl
+        setResultAudioUrl(temporaryObjectUrl)
+
+        // NOTE: Object URLs are session-only and become invalid after page reload.
+        await saveSong({
+          title: title || "Untitled",
+          genre,
+          lyrics,
+          model: model === "clip" ? "Lyria 3 Clip" : "Lyria 3 Pro",
+          language,
+          status: "completed",
+          item_ids: null,
+          audio_url: temporaryObjectUrl,
+          audio_hi_url: null,
+        })
+
+        setSaved(true)
+        setStatus("done")
+        toaster.success({ title: "Saved to library" })
+        return
+      }
+
       await saveSong({
         title: title || "Untitled",
         genre,
@@ -502,6 +586,7 @@ export function GeneratorPage() {
                 >
                   <option value="tempolor">Tempolor</option>
                   <option value="suno">Suno</option>
+                  <option value="lyria">Google Lyria 3</option>
                 </NativeSelect.Field>
                 <NativeSelect.Indicator />
               </NativeSelect.Root>

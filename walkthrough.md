@@ -243,3 +243,21 @@
 - Findings: The app lacked a proxy endpoint for Google Lyria 3 audio generation and had no dedicated Gemini key entry in the settings UI.
 - Conclusions: Add a Node runtime proxy route for Lyria generation using `@google/genai`, including optional request logging, and add save/load helpers plus UI controls for `gemini_api_key`.
 - Actions: Added `app/api/lyria-proxy/route.ts` to accept `{ prompt, lyrics?, model }`, enforce `process.env.GEMINI_API_KEY`, call `GoogleGenAI` `generateContent` with `lyria-3-pro-preview`/`lyria-3-clip-preview`, extract base64 audio from `candidates[].content.parts[].inlineData`, and return downloadable WAV bytes; added `getGeminiApiKey`/`saveGeminiApiKey` in `src/lib/api.ts`; added Gemini key load/save section in `src/screens/SettingsPage.tsx`; validated diagnostics.
+
+## 2026-05-09 (Lyria client helpers in api.ts)
+
+- Findings: Frontend code still needed direct client helpers for synchronous Lyria blob generation and Lyria key access aliases.
+- Conclusions: Add dedicated Lyria helpers that call the proxy route and return audio blobs without polling.
+- Actions: Updated `src/lib/api.ts` with `generateLyriaClip(prompt, lyrics?)`, `generateLyriaSong(prompt, lyrics?)`, `getLyriaApiKey()`, and `saveLyriaApiKey(key)` using `/api/lyria-proxy` and `gemini_api_key`; validated diagnostics.
+
+## 2026-05-09 (Generator Lyria provider flow)
+
+- Findings: Generator supported only Tempolor and Suno provider flows; Lyria generation and provider-specific model handling were missing.
+- Conclusions: Add Lyria as a third provider with direct blob-based generation (`pro`/`clip`) and session-scoped object URL playback/save semantics, while leaving Tempolor and Suno generation branches unchanged.
+- Actions: Updated `src/screens/GeneratorPage.tsx` to add provider type/value `lyria`, include provider option label `Google Lyria 3`, add Lyria model options (`Full Song (Pro)` -> `pro`, `30s Clip` -> `clip`), implement Lyria prompt construction and direct generation via `generateLyriaSong`/`generateLyriaClip` without polling, convert returned blob to object URL for playback, and add Lyria-specific save logic that stores a temporary object URL with model labels `Lyria 3 Pro`/`Lyria 3 Clip` and an explicit session-only warning comment; validated diagnostics.
+
+## 2026-05-09 (Lyria/Gemini key section with proxy test)
+
+- Findings: Settings had only a partial Gemini key block and no direct Lyria proxy connectivity test.
+- Conclusions: Upgrade the Gemini section to a full Lyria key management section using the Lyria-specific API helpers and add an end-to-end proxy test action.
+- Actions: Updated `src/screens/SettingsPage.tsx` to load key via `getLyriaApiKey()`, save via `saveLyriaApiKey()`, relabel field to `Google Gemini API Key (for Lyria 3)`, add helper text for `aistudio.google.com/apikey`, and add a `Test API Key` button that POSTs `{ prompt: "test", model: "clip" }` to `/api/lyria-proxy` and validates audio response before showing success toast; validated diagnostics.

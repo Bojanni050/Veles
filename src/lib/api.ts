@@ -475,6 +475,64 @@ export async function saveGeminiApiKey(key: string): Promise<void> {
   await saveSetting("gemini_api_key", key)
 }
 
+export async function generateLyriaClip(prompt: string, lyrics?: string): Promise<Blob> {
+  const res = await fetch("/api/lyria-proxy", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt, lyrics, model: "clip" }),
+  })
+
+  if (!res.ok) {
+    let message = `API error: ${res.status}`
+    try {
+      const payload = await res.json() as { error?: string }
+      if (payload.error) {
+        message = payload.error
+      }
+    } catch {
+      // Keep status-based fallback when response body is not JSON.
+    }
+    throw new Error(message)
+  }
+
+  return res.blob()
+}
+
+export async function generateLyriaSong(prompt: string, lyrics?: string): Promise<Blob> {
+  const res = await fetch("/api/lyria-proxy", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt, lyrics, model: "pro" }),
+  })
+
+  if (!res.ok) {
+    let message = `API error: ${res.status}`
+    try {
+      const payload = await res.json() as { error?: string }
+      if (payload.error) {
+        message = payload.error
+      }
+    } catch {
+      // Keep status-based fallback when response body is not JSON.
+    }
+    throw new Error(message)
+  }
+
+  return res.blob()
+}
+
+export async function getLyriaApiKey(): Promise<string | null> {
+  return getSetting("gemini_api_key")
+}
+
+export async function saveLyriaApiKey(key: string): Promise<void> {
+  await saveSetting("gemini_api_key", key)
+}
+
 export async function getSunoBalance(): Promise<number> {
   let data: SunoBalanceResponseData | number
   try {

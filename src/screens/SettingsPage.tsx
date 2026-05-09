@@ -12,8 +12,8 @@ import {
   getSunoApiKey,
   saveSunoApiKey,
   getSunoBalance,
-  getGeminiApiKey,
-  saveGeminiApiKey,
+  getLyriaApiKey,
+  saveLyriaApiKey,
 } from "@/lib/api"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Switch } from "@/components/ui/switch"
@@ -63,6 +63,7 @@ export function SettingsPage() {
   const [sunoSaving, setSunoSaving] = useState(false)
   const [sunoTesting, setSunoTesting] = useState(false)
   const [geminiSaving, setGeminiSaving] = useState(false)
+  const [geminiTesting, setGeminiTesting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -70,7 +71,7 @@ export function SettingsPage() {
       if (key) setApiKey(key)
       const sunoKey = await getSunoApiKey()
       if (sunoKey) setSunoApiKey(sunoKey)
-      const geminiKey = await getGeminiApiKey()
+      const geminiKey = await getLyriaApiKey()
       if (geminiKey) setGeminiApiKey(geminiKey)
       const model = await getSetting("default_model")
       if (model) setDefaultModel(model)
@@ -155,12 +156,56 @@ export function SettingsPage() {
   async function handleSaveGeminiApi() {
     setGeminiSaving(true)
     try {
-      await saveGeminiApiKey(geminiApiKey.trim())
+      await saveLyriaApiKey(geminiApiKey.trim())
       toaster.success({ title: "Gemini API key saved", description: "Your Gemini key has been updated." })
     } catch (error: unknown) {
       toaster.error({ title: "Error", description: getErrorMessage(error) })
     } finally {
       setGeminiSaving(false)
+    }
+  }
+
+  async function handleTestGeminiApi() {
+    setGeminiTesting(true)
+    try {
+      const key = geminiApiKey.trim()
+      if (!key) {
+        throw new Error("Please enter a Gemini API key first.")
+      }
+
+      await saveLyriaApiKey(key)
+
+      const res = await fetch("/api/lyria-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: "test", model: "clip" }),
+      })
+
+      if (!res.ok) {
+        let message = `API error: ${res.status}`
+        try {
+          const payload = await res.json() as { error?: string }
+          if (payload.error) {
+            message = payload.error
+          }
+        } catch {
+          // Keep status-based fallback when response body is not JSON.
+        }
+        throw new Error(message)
+      }
+
+      const contentType = res.headers.get("content-type") || ""
+      if (!contentType.startsWith("audio/")) {
+        throw new Error("Lyria proxy did not return audio data.")
+      }
+
+      toaster.success({ title: "Lyria connection successful", description: "Audio response received." })
+    } catch (error: unknown) {
+      toaster.error({ title: "Lyria connection failed", description: getErrorMessage(error) })
+    } finally {
+      setGeminiTesting(false)
     }
   }
 
@@ -280,7 +325,7 @@ export function SettingsPage() {
 
           <Box>
             <Text fontWeight="medium" mb="2" color="fg">
-              Gemini API Key
+              Google Gemini API Key (for Lyria 3)
             </Text>
             <PasswordInput
               placeholder="Enter your Gemini API key"
@@ -290,17 +335,26 @@ export function SettingsPage() {
               size="lg"
             />
             <Text fontSize="xs" color="fg.subtle" mt="1">
-              Stored under settings key: gemini_api_key
+              Get your free API key at aistudio.google.com/apikey
             </Text>
             <HStack gap="3" mt="3">
               <Button
                 colorPalette="teal"
-                size="sm"
+                size="lg"
                 onClick={handleSaveGeminiApi}
                 loading={geminiSaving}
               >
                 <LuSettings />
-                Save Gemini Key
+                Save API Key
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleTestGeminiApi}
+                loading={geminiTesting}
+              >
+                <LuFlaskConical />
+                Test API Key
               </Button>
             </HStack>
           </Box>

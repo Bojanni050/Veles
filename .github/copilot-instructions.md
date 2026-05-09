@@ -27,7 +27,7 @@ Changes here are automatically synchronized to:
 
 ## 🧠 Memory Protocol
 
-Two memory systems are active: **Hindsight** (semantic, long-term) and **Stash** (structured facts).
+IMPORTANT: Two memory systems are active: **Hindsight** (semantic, long-term) and **Stash** (structured facts).
 
 ### At conversation start (MANDATORY)
 
