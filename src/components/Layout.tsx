@@ -5,6 +5,8 @@ import NextLink from "next/link"
 import { LuLibrary, LuMusic, LuSettings, LuWandSparkles } from "react-icons/lu"
 import { usePathname } from "next/navigation"
 import { ColorModeButton } from "@/components/ui/color-mode"
+import { AudioPlayer } from "@/components/AudioPlayer"
+import { usePlayer } from "@/lib/player-context"
 
 const navItems = [
   { path: "/", label: "Generator", icon: LuWandSparkles },
@@ -14,6 +16,7 @@ const navItems = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { currentSong, queue, setCurrentSong } = usePlayer()
 
   return (
     <Flex minH="100vh" bg="bg">
@@ -81,10 +84,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </Box>
 
       <Box flex="1" overflow="auto">
-        <Box maxW="6xl" mx="auto" p={{ base: "4", md: "8" }}>
+        <Box maxW="6xl" mx="auto" p={{ base: "4", md: "8" }} pb={{ base: "24", md: "28" }}>
           {children}
         </Box>
       </Box>
+
+      <AudioPlayer
+        song={currentSong}
+        songs={queue}
+        onSongChange={setCurrentSong}
+      />
     </Flex>
   )
 }

@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Box, Button, Grid, Heading, HStack, Stack, Text, VStack } from "@chakra-ui/react"
 import { LuDownload, LuLibrary, LuMusic, LuPlay, LuTrash2 } from "react-icons/lu"
 import { getSongs, deleteSong, type Song } from "@/lib/api"
 import { toaster } from "@/components/ui/toaster"
-import { AudioPlayer } from "@/components/AudioPlayer"
-import { usePersistentState } from "@/lib/use-persistent-state"
+import { usePlayer } from "@/lib/player-context"
 
 function downloadFile(url: string): void {
   const link = document.createElement("a")
@@ -21,8 +20,7 @@ function downloadFile(url: string): void {
 export function LibraryPage() {
   const [songs, setSongs] = useState<Song[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeSongId, setActiveSongId] = usePersistentState<number | null>("veles.library.activeSongId", null)
-  const [activeSong, setActiveSong] = useState<Song | null>(null)
+  const { currentSong, setCurrentSong, setQueue } = usePlayer()
 
   useEffect(() => {
     loadSongs()
@@ -38,23 +36,29 @@ export function LibraryPage() {
     }
   }
 
+  const playableSongs = useMemo(() => songs.filter((s) => s.audio_url), [songs])
+
   useEffect(() => {
-    if (activeSongId === null) {
-      setActiveSong(null)
+    setQueue(playableSongs)
+  }, [playableSongs, setQueue])
+
+  useEffect(() => {
+    if (!currentSong) {
       return
     }
 
-    const nextSong = songs.find((song) => song.id === activeSongId) ?? null
-    setActiveSong(nextSong)
-  }, [activeSongId, songs])
+    const existsInLibrary = songs.some((song) => song.id === currentSong.id)
+    if (!existsInLibrary) {
+      setCurrentSong(null)
+    }
+  }, [songs, currentSong, setCurrentSong])
 
   async function handleDelete(id: number) {
     try {
       await deleteSong(id)
       setSongs((prev) => prev.filter((s) => s.id !== id))
-      if (activeSong?.id === id) {
-        setActiveSong(null)
-        setActiveSongId(null)
+      if (currentSong?.id === id) {
+        setCurrentSong(null)
       }
       toaster.success({ title: "Song deleted" })
     } catch {
@@ -62,11 +66,9 @@ export function LibraryPage() {
     }
   }
 
-  const playableSongs = songs.filter((s) => s.audio_url)
-
   return (
     <>
-      <VStack align="stretch" gap="8" pb="24">
+      <VStack align="stretch" gap="8">
         <Box>
           <Heading size="2xl" fontWeight="bold" color="fg">
             Library
@@ -111,7 +113,7 @@ export function LibraryPage() {
         ) : (
           <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
             {songs.map((song) => {
-              const isActive = activeSong?.id === song.id
+              const isActive = currentSong?.id === song.id
               return (
                 <Box
                   key={song.id}
@@ -126,8 +128,7 @@ export function LibraryPage() {
                   cursor={song.audio_url ? "pointer" : "default"}
                   onClick={() => {
                     if (song.audio_url) {
-                      setActiveSong(song)
-                      setActiveSongId(song.id)
+                      setCurrentSong(song)
                     }
                   }}
                 >
@@ -207,12 +208,6 @@ export function LibraryPage() {
           </Grid>
         )}
       </VStack>
-
-      <AudioPlayer
-        song={activeSong}
-        songs={playableSongs}
-        onSongChange={setActiveSong}
-      />
     </>
   )
 }
