@@ -15,3 +15,9 @@
 - Findings: ESLint was still flagging empty interface declarations in Chakra helper components.
 - Conclusions: Keep the component APIs the same and switch the empty interfaces to type aliases to satisfy the current lint rules.
 - Actions: Updated the four flagged UI helpers to use type aliases instead of empty interfaces and re-ran lint successfully.
+
+## 2026-05-09 (Page persistence)
+
+- Findings: Generator drafts and library selection state were reset when moving between routes or refreshing the page.
+- Conclusions: Persist only the page-local UI state that benefits from restoration, and leave SQLite-backed settings in the database.
+- Actions: Added a reusable localStorage state hook, persisted the generator draft fields, persisted the selected library song, and validated with build and lint.

@@ -6,6 +6,7 @@ import { LuDownload, LuLibrary, LuMusic, LuPlay, LuTrash2 } from "react-icons/lu
 import { getSongs, deleteSong, type Song } from "@/lib/api"
 import { toaster } from "@/components/ui/toaster"
 import { AudioPlayer } from "@/components/AudioPlayer"
+import { usePersistentState } from "@/lib/use-persistent-state"
 
 function downloadFile(url: string): void {
   const link = document.createElement("a")
@@ -20,6 +21,7 @@ function downloadFile(url: string): void {
 export function LibraryPage() {
   const [songs, setSongs] = useState<Song[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeSongId, setActiveSongId] = usePersistentState<number | null>("veles.library.activeSongId", null)
   const [activeSong, setActiveSong] = useState<Song | null>(null)
 
   useEffect(() => {
@@ -36,11 +38,24 @@ export function LibraryPage() {
     }
   }
 
+  useEffect(() => {
+    if (activeSongId === null) {
+      setActiveSong(null)
+      return
+    }
+
+    const nextSong = songs.find((song) => song.id === activeSongId) ?? null
+    setActiveSong(nextSong)
+  }, [activeSongId, songs])
+
   async function handleDelete(id: number) {
     try {
       await deleteSong(id)
       setSongs((prev) => prev.filter((s) => s.id !== id))
-      if (activeSong?.id === id) setActiveSong(null)
+      if (activeSong?.id === id) {
+        setActiveSong(null)
+        setActiveSongId(null)
+      }
       toaster.success({ title: "Song deleted" })
     } catch {
       toaster.error({ title: "Failed to delete song" })
@@ -109,7 +124,12 @@ export function LibraryPage() {
                   transitionDuration="fast"
                   _hover={{ shadow: "md", borderColor: "teal.500/20" }}
                   cursor={song.audio_url ? "pointer" : "default"}
-                  onClick={() => { if (song.audio_url) setActiveSong(song) }}
+                  onClick={() => {
+                    if (song.audio_url) {
+                      setActiveSong(song)
+                      setActiveSongId(song.id)
+                    }
+                  }}
                 >
                   <Stack gap="3">
                     <HStack justify="space-between">

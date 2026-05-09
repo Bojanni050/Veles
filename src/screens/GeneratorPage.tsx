@@ -27,6 +27,7 @@ import {
   saveSong,
   getBalance,
 } from "@/lib/api"
+import { usePersistentState } from "@/lib/use-persistent-state"
 
 const models = ["TemPolor v3", "TemPolor v3.5"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
@@ -76,14 +77,14 @@ function downloadFile(url: string): void {
 }
 
 export function GeneratorPage() {
-  const [title, setTitle] = useState("")
-  const [genre, setGenre] = useState("")
-  const [model, setModel] = useState("TemPolor v3.5")
-  const [language, setLanguage] = useState("English")
-  const [voiceId, setVoiceId] = useState("")
-  const [autoGenerate, setAutoGenerate] = useState(false)
-  const [lyrics, setLyrics] = useState("")
-  const [lyricsPrompt, setLyricsPrompt] = useState("")
+  const [title, setTitle] = usePersistentState("veles.generator.title", "")
+  const [genre, setGenre] = usePersistentState("veles.generator.genre", "")
+  const [model, setModel] = usePersistentState("veles.generator.model", "TemPolor v3.5")
+  const [language, setLanguage] = usePersistentState("veles.generator.language", "English")
+  const [voiceId, setVoiceId] = usePersistentState("veles.generator.voiceId", "")
+  const [autoGenerate, setAutoGenerate] = usePersistentState("veles.generator.autoGenerate", false)
+  const [lyrics, setLyrics] = usePersistentState("veles.generator.lyrics", "")
+  const [lyricsPrompt, setLyricsPrompt] = usePersistentState("veles.generator.lyricsPrompt", "")
   const [generatingLyrics, setGeneratingLyrics] = useState(false)
   const [status, setStatus] = useState<GenerationStatus>("idle")
   const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null)
@@ -105,7 +106,7 @@ export function GeneratorPage() {
       }
     }
     loadDefaults()
-  }, [])
+  }, [setLanguage, setModel])
 
   const pollForResult = useCallback(async (itemIds: string[], maxAttempts = 60): Promise<{ audio_url: string | null; audio_hi_url: string | null }> => {
     for (let i = 0; i < maxAttempts; i++) {
@@ -202,6 +203,7 @@ export function GeneratorPage() {
         audio_hi_url: resultAudioHiUrl,
       })
       setSaved(true)
+      setStatus("done")
       toaster.success({ title: "Saved to library" })
     } catch (error: unknown) {
       toaster.error({ title: "Error saving", description: getErrorMessage(error) })
