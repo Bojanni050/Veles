@@ -69,3 +69,9 @@
 - Findings: The API key field was always masked, which made manual entry and verification error-prone.
 - Conclusions: Reuse the existing shared password input component with built-in visibility toggle so behavior stays consistent across the app.
 - Actions: Replaced the Settings API key input with `PasswordInput` (eye icon show/hide control) and validated with lint.
+
+## 2026-05-09 (Generation error message accuracy)
+
+- Findings: Generator failure UI always showed an API-key-specific message even when the real cause was timeout or a different upstream error.
+- Conclusions: Capture and display the actual generation error text so users can act on the correct failure reason.
+- Actions: Added explicit generation error state in `GeneratorPage`, set timeout-specific and caught-error messages during generation flow, replaced the hardcoded failed-state text with dynamic error output, and validated with lint.

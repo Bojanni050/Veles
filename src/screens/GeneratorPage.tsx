@@ -87,6 +87,7 @@ export function GeneratorPage() {
   const [lyricsPrompt, setLyricsPrompt] = usePersistentState("veles.generator.lyricsPrompt", "")
   const [generatingLyrics, setGeneratingLyrics] = useState(false)
   const [status, setStatus] = useState<GenerationStatus>("idle")
+  const [generationError, setGenerationError] = useState<string | null>(null)
   const [resultAudioUrl, setResultAudioUrl] = useState<string | null>(null)
   const [resultAudioHiUrl, setResultAudioHiUrl] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -165,6 +166,7 @@ export function GeneratorPage() {
   async function handleGenerateSong() {
     if (!genre.trim() || !lyrics.trim()) return
     setStatus("sending")
+    setGenerationError(null)
     setResultAudioUrl(null)
     setResultAudioHiUrl(null)
     setSaved(false)
@@ -180,12 +182,16 @@ export function GeneratorPage() {
         toaster.success({ title: "Song generated!" })
       } else {
         setStatus("failed")
-        toaster.error({ title: "Generation failed", description: "Song generation timed out or failed." })
+        const timeoutMessage = "Song generation timed out before audio was returned."
+        setGenerationError(timeoutMessage)
+        toaster.error({ title: "Generation failed", description: timeoutMessage })
       }
       getBalance().then(setBalance).catch(() => {})
     } catch (error: unknown) {
       setStatus("failed")
-      toaster.error({ title: "Error", description: getErrorMessage(error) })
+      const message = getErrorMessage(error)
+      setGenerationError(message)
+      toaster.error({ title: "Error", description: message })
     }
   }
 
@@ -517,7 +523,7 @@ export function GeneratorPage() {
           borderColor="border.error"
         >
           <Text color="fg.error" fontWeight="medium">
-            Song generation failed. Please check your API key and try again.
+            {generationError ?? "Song generation failed. Please review your settings and try again."}
           </Text>
         </Box>
       )}
