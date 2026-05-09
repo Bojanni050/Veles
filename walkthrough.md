@@ -57,3 +57,9 @@
 - Findings: Some generation requests returned transient responses without `item_ids` even though a retry can succeed shortly after.
 - Conclusions: Keep strict validation but allow one automatic retry only for the specific missing-item-IDs condition.
 - Actions: Added a focused one-shot retry wrapper for lyrics/song generation calls when `item_ids` are missing, preserved immediate failure for all other errors, and validated with lint.
+
+## 2026-05-09 (Configurable API request logging)
+
+- Findings: Debugging Tempolor integration issues required manual instrumentation because request/response visibility was not available by default.
+- Conclusions: Add server-side proxy logging controlled by a persisted user setting so logs can be enabled only when needed.
+- Actions: Added an `api_request_logging_enabled` toggle in Settings, persisted the value in the existing settings store, wired the Tempolor proxy to log method/path/body keys and response status/duration when enabled, and validated with lint.

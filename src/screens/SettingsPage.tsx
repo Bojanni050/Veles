@@ -10,6 +10,7 @@ import { toaster } from "@/components/ui/toaster"
 const models = ["TemPolor v3", "TemPolor v3.5"]
 const languages = ["English", "Dutch", "German", "Spanish", "French", "Korean", "Japanese", "Chinese"]
 const nativeMenuSettingKey = "native_windows_menu_enabled"
+const apiRequestLoggingSettingKey = "api_request_logging_enabled"
 
 type NativeMenuBridge = {
   isSupported: () => boolean
@@ -41,6 +42,7 @@ export function SettingsPage() {
   const [defaultLanguage, setDefaultLanguage] = useState("English")
   const [nativeMenuEnabled, setNativeMenuEnabled] = useState(false)
   const [nativeMenuSupported, setNativeMenuSupported] = useState(false)
+  const [apiRequestLoggingEnabled, setApiRequestLoggingEnabled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
 
@@ -59,6 +61,9 @@ export function SettingsPage() {
 
       const nativeMenuValue = parseBooleanSetting(await getSetting(nativeMenuSettingKey))
       setNativeMenuEnabled(nativeMenuValue)
+
+      const apiRequestLoggingValue = parseBooleanSetting(await getSetting(apiRequestLoggingSettingKey))
+      setApiRequestLoggingEnabled(apiRequestLoggingValue)
 
       if (supportsNativeMenu && menuBridge) {
         try {
@@ -90,6 +95,7 @@ export function SettingsPage() {
       await saveSetting("default_model", defaultModel)
       await saveSetting("default_language", defaultLanguage)
       await saveSetting(nativeMenuSettingKey, nativeMenuEnabled ? "true" : "false")
+      await saveSetting(apiRequestLoggingSettingKey, apiRequestLoggingEnabled ? "true" : "false")
 
       const menuBridge = getNativeMenuBridge()
       if (nativeMenuSupported && menuBridge) {
@@ -193,6 +199,21 @@ export function SettingsPage() {
               {nativeMenuSupported
                 ? "Applies to the desktop app after you save settings."
                 : "Available only in the Windows desktop app."}
+            </Text>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              API Request Logging
+            </Text>
+            <Switch
+              checked={apiRequestLoggingEnabled}
+              onCheckedChange={(details) => setApiRequestLoggingEnabled(details.checked)}
+            >
+              Log Tempolor API requests and responses in the server console
+            </Switch>
+            <Text fontSize="xs" color="fg.subtle" mt="1">
+              Useful for debugging generation issues. Applies after you save settings.
             </Text>
           </Box>
 

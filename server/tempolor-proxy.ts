@@ -1,4 +1,4 @@
-import { db } from "../src/lib/db"
+import { getSettingValue } from "./store"
 
 const TEMPOLOR_BASE = "https://api.tempolor.com"
 
@@ -9,8 +9,30 @@ type ProxyPayload = {
 }
 
 function getApiKey(): string | null {
-  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get("tempolor_api_key") as { value: string } | undefined
-  return row?.value ?? null
+  return getSettingValue("tempolor_api_key")
+}
+
+function isApiRequestLoggingEnabled(): boolean {
+  return getSettingValue("api_request_logging_enabled") === "true"
+}
+
+function logProxyRequest(payload: ProxyPayload, method: string): number {
+  const startTime = Date.now()
+  const hasBody = payload.body !== undefined && payload.body !== null
+  const bodyKeys = hasBody && typeof payload.body === "object"
+    ? Object.keys(payload.body as Record<string, unknown>)
+    : []
+
+  console.log(
+    `[Tempolor Proxy] -> ${method} ${payload.path} | hasBody=${hasBody} | bodyKeys=[${bodyKeys.join(",")}]`,
+  )
+
+  return startTime
+}
+
+function logProxyResponse(method: string, path: string, status: number, startedAt: number): void {
+  const duration = Date.now() - startedAt
+  console.log(`[Tempolor Proxy] <- ${method} ${path} | status=${status} | durationMs=${duration}`)
 }
 
 export async function handleTempolorProxyPayload(payload: ProxyPayload): Promise<Response> {
@@ -24,6 +46,9 @@ export async function handleTempolorProxyPayload(payload: ProxyPayload): Promise
   }
 
   const httpMethod = (payload.method || "POST").toUpperCase()
+  const shouldLog = isApiRequestLoggingEnabled()
+  const requestStartedAt = shouldLog ? logProxyRequest(payload, httpMethod) : 0
+
   const fetchOptions: RequestInit = {
     method: httpMethod,
     headers: {
@@ -38,6 +63,10 @@ export async function handleTempolorProxyPayload(payload: ProxyPayload): Promise
 
   const upstream = await fetch(`${TEMPOLOR_BASE}${payload.path}`, fetchOptions)
   const responseText = await upstream.text()
+
+  if (shouldLog) {
+    logProxyResponse(httpMethod, payload.path, upstream.status, requestStartedAt)
+  }
 
   return new Response(responseText, {
     status: upstream.status,
