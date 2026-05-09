@@ -151,7 +151,7 @@ async function tempolorFetch<T>(path: string, body: object, method = "POST"): Pr
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.error("[tempolorFetch] Raw payload:", payload)
+    console.log("[tempolorFetch] Raw payload:", payload)
   }
 
   if (payload === null) {
