@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Box, Button, Heading, HStack, Input, NativeSelect, Stack, Text, VStack } from "@chakra-ui/react"
+import { Box, Button, Heading, HStack, NativeSelect, Stack, Text, VStack } from "@chakra-ui/react"
 import { LuFlaskConical, LuSettings } from "react-icons/lu"
 import { getApiKey, saveApiKey, getSetting, saveSetting, testApiKey } from "@/lib/api"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Switch } from "@/components/ui/switch"
 import { toaster } from "@/components/ui/toaster"
 
@@ -133,8 +134,7 @@ export function SettingsPage() {
             <Text fontWeight="medium" mb="2" color="fg">
               Tempolor API Key
             </Text>
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Enter your Tempolor API key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}

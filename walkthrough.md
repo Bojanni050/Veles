@@ -63,3 +63,9 @@
 - Findings: Debugging Tempolor integration issues required manual instrumentation because request/response visibility was not available by default.
 - Conclusions: Add server-side proxy logging controlled by a persisted user setting so logs can be enabled only when needed.
 - Actions: Added an `api_request_logging_enabled` toggle in Settings, persisted the value in the existing settings store, wired the Tempolor proxy to log method/path/body keys and response status/duration when enabled, and validated with lint.
+
+## 2026-05-09 (API key visibility toggle)
+
+- Findings: The API key field was always masked, which made manual entry and verification error-prone.
+- Conclusions: Reuse the existing shared password input component with built-in visibility toggle so behavior stays consistent across the app.
+- Actions: Replaced the Settings API key input with `PasswordInput` (eye icon show/hide control) and validated with lint.
