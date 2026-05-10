@@ -118,6 +118,22 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result
+      if (typeof result !== "string") {
+        reject(new Error("Failed to encode audio for saving"))
+        return
+      }
+      resolve(result)
+    }
+    reader.onerror = () => reject(new Error("Failed to encode audio for saving"))
+    reader.readAsDataURL(blob)
+  })
+}
+
 export function GeneratorPage() {
   const [title, setTitle] = usePersistentState("veles.generator.title", "")
   const [genre, setGenre] = usePersistentState("veles.generator.genre", "")
@@ -437,6 +453,7 @@ export function GeneratorPage() {
     try {
       if (provider === "lyria" && lyriaBlob) {
         const temporaryObjectUrl = URL.createObjectURL(lyriaBlob)
+        const persistentAudioUrl = await blobToDataUrl(lyriaBlob)
 
         if (lyriaObjectUrlRef.current) {
           URL.revokeObjectURL(lyriaObjectUrlRef.current)
@@ -453,7 +470,7 @@ export function GeneratorPage() {
           language,
           status: "completed",
           item_ids: null,
-          audio_url: temporaryObjectUrl,
+          audio_url: persistentAudioUrl,
           audio_hi_url: null,
         })
 

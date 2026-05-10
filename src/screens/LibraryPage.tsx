@@ -27,7 +27,7 @@ export function LibraryPage() {
     }
   }
 
-  const playableSongs = useMemo(() => songs.filter((s) => s.audio_url), [songs])
+  const playableSongs = useMemo(() => songs.filter((s) => s.audio_hi_url || s.audio_url), [songs])
 
   useEffect(() => {
     setQueue(playableSongs)
@@ -116,9 +116,9 @@ export function LibraryPage() {
                   transition="all"
                   transitionDuration="fast"
                   _hover={{ shadow: "md", borderColor: "teal.500/20" }}
-                  cursor={song.audio_url ? "pointer" : "default"}
+                  cursor={song.audio_hi_url || song.audio_url ? "pointer" : "default"}
                   onClick={() => {
-                    if (song.audio_url) {
+                    if (song.audio_hi_url || song.audio_url) {
                       setCurrentSong(song)
                     }
                   }}
@@ -165,7 +165,7 @@ export function LibraryPage() {
                           day: "numeric",
                         })}
                       </Text>
-                      {song.audio_url ? (
+                      {song.audio_hi_url || song.audio_url ? (
                         <HStack gap="1">
                           <Button
                             variant="ghost"

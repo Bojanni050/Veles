@@ -238,6 +238,12 @@
 - Conclusions: Standardize polling to once every 30 seconds with a maximum of 20 attempts so the UI and lyric polling both stop within 10 minutes.
 - Actions: Updated `src/screens/GeneratorPage.tsx` and `src/lib/api.ts` to use a 30-second poll interval and 20-attempt limit, including the visible attempt counter and progress bar on the generator page; validated diagnostics.
 
+## 2026-05-10 (Lyria library replay persistence fix)
+
+- Findings: Lyria songs were saved with `blob:` object URLs, which are only valid for the current browser session and become unplayable after reload in Library.
+- Conclusions: Persist Lyria audio as a data URL string when saving to the database, while keeping object URLs only for immediate in-session preview playback.
+- Actions: Added blob-to-data-URL conversion in `src/screens/GeneratorPage.tsx` and saved that persistent value via `saveSong`; updated `src/screens/LibraryPage.tsx` playability checks to treat either `audio_hi_url` or `audio_url` as playable; validated.
+
 ## 2026-05-09 (Lyria proxy and Gemini key settings)
 
 - Findings: The app lacked a proxy endpoint for Google Lyria 3 audio generation and had no dedicated Gemini key entry in the settings UI.
