@@ -48,10 +48,15 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Could not reach the API."
 }
 
+type TestApiKeyFn = (provider?: "tempolor" | "poyo") => Promise<void>
+const testApiKeyByProvider = testApiKey as TestApiKeyFn
+
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState("")
+  const [poyoApiKey, setPoyoApiKey] = useState("")
   const [sunoApiKey, setSunoApiKey] = useState("")
   const [geminiApiKey, setGeminiApiKey] = useState("")
+  const [activeProvider, setActiveProvider] = useState<"tempolor" | "poyo">("tempolor")
   const [defaultModel, setDefaultModel] = useState("TemPolor v3.5")
   const [defaultLanguage, setDefaultLanguage] = useState("English")
   const [nativeMenuEnabled, setNativeMenuEnabled] = useState(false)
@@ -69,10 +74,16 @@ export function SettingsPage() {
     async function load() {
       const key = await getApiKey()
       if (key) setApiKey(key)
+      const poyoKey = await getSetting("poyo_api_key")
+      if (poyoKey) setPoyoApiKey(poyoKey)
       const sunoKey = await getSunoApiKey()
       if (sunoKey) setSunoApiKey(sunoKey)
       const geminiKey = await getLyriaApiKey()
       if (geminiKey) setGeminiApiKey(geminiKey)
+      const provider = await getSetting("active_provider")
+      if (provider === "tempolor" || provider === "poyo") {
+        setActiveProvider(provider)
+      }
       const model = await getSetting("default_model")
       if (model) setDefaultModel(model)
       const lang = await getSetting("default_language")
@@ -112,10 +123,37 @@ export function SettingsPage() {
   async function handleTestApi() {
     setTesting(true)
     try {
-      await testApiKey()
-      toaster.success({ title: "Connection successful", description: "Your API key is valid." })
-    } catch (error: unknown) {
-      toaster.error({ title: "Connection failed", description: getErrorMessage(error) })
+      const [tempolorResult, poyoResult] = await Promise.allSettled([
+        testApiKeyByProvider("tempolor"),
+        testApiKeyByProvider("poyo"),
+      ])
+
+      const tempolorOk = tempolorResult.status === "fulfilled"
+      const poyoOk = poyoResult.status === "fulfilled"
+
+      if (tempolorOk && poyoOk) {
+        toaster.success({
+          title: "Connection successful",
+          description: "Tempolor and PoYo API keys are valid.",
+        })
+        return
+      }
+
+      if (tempolorResult.status === "rejected") {
+        toaster.error({
+          title: "Tempolor connection failed",
+          description: getErrorMessage(tempolorResult.reason),
+        })
+      }
+
+      if (poyoResult.status === "rejected") {
+        toaster.error({
+          title: "PoYo connection failed",
+          description: getErrorMessage(poyoResult.reason),
+        })
+      }
+    } catch {
+      toaster.error({ title: "Connection failed", description: "Could not run provider tests." })
     } finally {
       setTesting(false)
     }
@@ -213,6 +251,8 @@ export function SettingsPage() {
     setSaving(true)
     try {
       await saveApiKey(apiKey)
+      await saveSetting("poyo_api_key", poyoApiKey)
+      await saveSetting("active_provider", activeProvider)
       await saveSetting("default_model", defaultModel)
       await saveSetting("default_language", defaultLanguage)
       await saveSetting(nativeMenuSettingKey, nativeMenuEnabled ? "true" : "false")
@@ -285,6 +325,47 @@ export function SettingsPage() {
                 Test API Key
               </Button>
             </HStack>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              PoYo API Key
+            </Text>
+            <PasswordInput
+              placeholder="Enter your PoYo API key"
+              value={poyoApiKey}
+              onChange={(e) => setPoyoApiKey(e.target.value)}
+              bg="bg"
+              size="lg"
+            />
+            <Text fontSize="xs" color="fg.subtle" mt="1">
+              Get your key from poyo.ai/dashboard/api-key
+            </Text>
+          </Box>
+
+          <Box>
+            <Text fontWeight="medium" mb="2" color="fg">
+              Active Music Provider
+            </Text>
+            <NativeSelect.Root size="lg">
+              <NativeSelect.Field
+                aria-label="Active music provider"
+                title="Active music provider"
+                name="active_provider"
+                value={activeProvider}
+                onChange={(e) => {
+                  const value = e.currentTarget.value
+                  if (value === "tempolor" || value === "poyo") {
+                    setActiveProvider(value)
+                  }
+                }}
+                bg="bg"
+              >
+                <option value="tempolor">Tempolor</option>
+                <option value="poyo">PoYo</option>
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
           </Box>
 
           <Box>
@@ -366,6 +447,8 @@ export function SettingsPage() {
             <NativeSelect.Root size="lg">
               <NativeSelect.Field
                 aria-label="Default model"
+                title="Default model"
+                name="default_model"
                 value={defaultModel}
                 onChange={(e) => setDefaultModel(e.currentTarget.value)}
                 bg="bg"
@@ -385,6 +468,8 @@ export function SettingsPage() {
             <NativeSelect.Root size="lg">
               <NativeSelect.Field
                 aria-label="Default language"
+                title="Default language"
+                name="default_language"
                 value={defaultLanguage}
                 onChange={(e) => setDefaultLanguage(e.currentTarget.value)}
                 bg="bg"

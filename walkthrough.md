@@ -273,3 +273,27 @@
 - Findings: Lyria test calls failed with `GEMINI_API_KEY is not configured` even after saving the Gemini key in Settings, because the proxy read only process env.
 - Conclusions: Resolve key lookup from saved settings first and keep env as fallback so key changes work immediately without restart.
 - Actions: Updated `app/api/lyria-proxy/route.ts` to read `getSettingValue("gemini_api_key") || process.env.GEMINI_API_KEY` and return a clearer missing-key error; validated diagnostics.
+
+## 2026-05-12 (Shared music provider contract)
+
+- Findings: Provider adapters needed a single shared contract to keep Tempolor/Poyo integration method signatures and result shapes consistent.
+- Conclusions: Add a dedicated type-only module in the shared lib layer with provider names, operation result aliases, query payload shape, and adapter interface.
+- Actions: Added `src/lib/music-provider.ts` with `ProviderName`, `GenerateLyricsResult`, `GenerateSongResult`, `QueryResult`, and `MusicProvider` type definitions only; validated.
+
+## 2026-05-12 (Poyo proxy route wrapper)
+
+- Findings: A dedicated App Router API entrypoint was needed to expose the Poyo proxy handler from the server layer.
+- Conclusions: Mirror the existing Tempolor route-wrapper pattern with a thin POST passthrough to the server proxy handler.
+- Actions: Added `app/api/poyo-proxy/route.ts` importing `handlePoyoProxyRequest` from `server/poyo-proxy` and returning its response from `POST`; validated.
+
+## 2026-05-12 (PoYo music provider adapter)
+
+- Findings: The shared provider contract required a PoYo-specific adapter with Suno-style task submission and polling semantics routed through the local proxy.
+- Conclusions: Implement a dedicated provider factory that encapsulates PoYo endpoint payloads and maps provider responses to the shared `MusicProvider` shape.
+- Actions: Added `src/lib/providers/poyo.ts` with `createPoyoProvider()` implementing generate lyrics/song submission, single-task status querying, fixed zero balance behavior, and API key test behavior via `/api/poyo-proxy`; validated diagnostics.
+
+## 2026-05-12 (Settings PoYo key and active provider)
+
+- Findings: Settings only managed Tempolor for shared provider credentials/testing and had no persisted active-provider selection.
+- Conclusions: Extend settings with PoYo API key storage/testing and add an explicit active provider selector persisted in settings.
+- Actions: Updated `src/screens/SettingsPage.tsx` to load/save `poyo_api_key`, added a PoYo password field, expanded `handleTestApi` to test Tempolor + PoYo with combined success and per-provider error toasts, added `active_provider` select (`tempolor`/`poyo`) with default fallback to `tempolor`, and validated diagnostics.
